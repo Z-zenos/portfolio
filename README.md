@@ -22,6 +22,10 @@ python3 -m http.server 5173
 # open http://localhost:5173
 ```
 
+## Blog
+
+`/blog/` lists the posts in `src/posts.js` (newest first; `soon: true` shows a coming-soon card, `lang: 'vi'` marks a Vietnamese post, which uses Be Vietnam Pro and VT323 because the pixel fonts have no Vietnamese diacritics). Each published post is a static page at `blog/<slug>/index.html` that loads `src/blog.js` for the shared navbar, petals and prev/next links. Images live in `assets/blog/<slug>/`: `cover.png` plus section illustrations, all pixel art shipped at native size and scaled up with `image-rendering: pixelated`; `cover.jpg` is the link preview.
+
 ## Editing content
 
 All text lives in `src/profile.js` (values marked `EDIT`): name, katakana name, roles,
@@ -31,7 +35,8 @@ stats, story, expertise, quests (experience), skills, projects and links.
 
 - `src/profile.js`: content
 - `src/sections.js`: renders each section from the content
-- `src/main.js`: wiring (typewriter, quest log, skill filters, vitals roll, nav highlight, day/night clock, welcome screen, Tet easter egg)
+- `src/nav.js`: the navbar shared by every page (links, Vietnam clock and day/night, theme toggle, mobile menu)
+- `src/main.js`: wiring (typewriter, quest log, skill filters, vitals roll, section highlight in the nav, welcome screen, Tet easter egg)
 - `src/scene.js`: hero effects on top of `assets/hero.png` (night sky, clicks, river ripples, fireworks)
 - `src/lofi-player.js`: generative lo-fi engine and the radio player UI (prev/next, real audio visualizer, volume, minimize)
 - `src/decor.js`: handwritten notes, hanko stamps, tategaki phrases and pixel props

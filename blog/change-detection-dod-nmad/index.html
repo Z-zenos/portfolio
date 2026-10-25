@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>What Changed Between Two Drone Flights? · Hoang Anh Tuan</title>
+    <meta name="description" content="DEM of Difference, NMAD and honest thresholds: telling real earthworks apart from survey noise." />
+    <meta name="theme-color" content="#fbf8f0" />
+    <link rel="canonical" href="https://tuanha.dev/blog/change-detection-dod-nmad/" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/assets/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://tuanha.dev/blog/change-detection-dod-nmad/" />
+    <meta property="og:site_name" content="tuanha.dev" />
+    <meta property="og:title" content="What Changed Between Two Drone Flights? · Hoang Anh Tuan" />
+    <meta property="og:description" content="DEM of Difference, NMAD and honest thresholds: telling real earthworks apart from survey noise." />
+    <meta property="og:image" content="https://tuanha.dev/assets/blog/change-detection-dod-nmad/cover.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="article:published_time" content="2026-10-23" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&family=Yomogi&family=Be+Vietnam+Pro:ital,wght@0,400;0,600;1,400&display=swap"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <script>
+      document.documentElement.classList.add('js', 'intro-seen');
+      // Theme: the visitor's saved choice, otherwise the system setting. Set before first paint.
+      try {
+        const saved = localStorage.getItem('theme');
+        document.documentElement.dataset.theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      } catch {
+        document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+    </script>
+    <script type="module" src="/src/blog.js"></script>
+  </head>
+  <body class="blog" data-slug="change-detection-dod-nmad">
+    <a class="skip" href="#main">Skip to content</a>
+    <canvas id="petals" aria-hidden="true"></canvas>
+    <header class="nav" data-nav></header>
+    <main id="main" tabindex="-1">
+      <article class="post">
+        <header class="post__head">
+          <a class="post__back" href="/blog/">← All field notes</a>
+          <p class="sec-head__chapter"><span class="tile tile--red">記</span>「 二回の飛行で何が変わった？ 」</p>
+          <h1 class="post__title">What Changed Between Two Drone Flights?</h1>
+          <p class="post__meta"><time datetime="2026-10-23">2026-10-23</time> · 12 min read</p>
+          <ul class="tags"><li>change detection</li><li>statistics</li><li>gis</li></ul>
+        </header>
+        <figure class="post__cover"><img src="/assets/blog/change-detection-dod-nmad/cover.png" alt="" width="1200" height="675" /></figure>
+        <div class="post__body">
+<p class="post__lead">Two drone flights can make an untouched yard look busy: red here, blue there, centimetres of apparent change. Subtracting their surfaces is easy. Deciding which differences deserve attention takes more care. I am designing a feature to compare two point-cloud versions, estimate the noise in that pair, and turn changes above a chosen threshold into cut/fill volumes. Nothing here has shipped; this is the design, including the limits I want users to see.</p>
+
+<h2>Unchanged ground rarely reads zero</h2>
+
+<p>Step on a scale twice and it might read 60.1 kg, then 59.9 kg. That 200 g difference need not be weight loss. Drone surveys have similar ambiguity: photo geometry changes, GNSS errors shift positions, grass moves. Even untouched ground produces differences, sometimes with a systematic offset. Paint every non-zero cell and the map fills with distracting specks. I need to answer three questions: how do I compare the clouds, how large is the noise for <em>this</em> pair, and which differences should I report?</p>
+
+<figure class="sketch"><img src="/assets/blog/change-detection-dod-nmad/01.png" alt="Two drones survey unchanged pavement while red and navy measurement meshes show small apparent height differences above it." width="1200" height="800" loading="lazy" /><figcaption>The yard can stay still while its measurements wobble.</figcaption></figure>
+
+<h2>Step 1: share a surface grid</h2>
+
+<p>The flights sample different spots, so their points have no direct correspondence. For this design, I use one shared grid and assign each cell one height per flight. This <strong>Digital Surface Model (DSM)</strong> represents the upper surface, including roofs, trees and parked trucks.</p>
+
+<p>Rasterizing collects the points in each cell of side <em>r</em> and reduces their heights to one number. I am considering <code>max</code> for the upper surface, but it amplifies high outliers and can rise with point density even without change. I would filter outliers and compare reducers on real pairs. Empty cells are <strong>nodata</strong>, never zero: a missing observation must not become a deep pit.</p>
+
+<figure>
+  <svg viewBox="0 0 640 210" width="100%" role="img" aria-labelledby="fig-raster-title">
+    <title id="fig-raster-title">Points falling into a 3 by 3 grid; each cell keeps the maximum height, the empty cell becomes nodata</title>
+    <g fill="none" stroke="currentColor" stroke-opacity="0.35">
+      <rect x="40" y="30" width="150" height="150"/>
+      <line x1="90" y1="30" x2="90" y2="180"/><line x1="140" y1="30" x2="140" y2="180"/>
+      <line x1="40" y1="80" x2="190" y2="80"/><line x1="40" y1="130" x2="190" y2="130"/>
+    </g>
+    <g fill="var(--navy)">
+      <circle cx="55" cy="45" r="3"/><circle cx="75" cy="65" r="3"/>
+      <circle cx="115" cy="55" r="3"/>
+      <circle cx="152" cy="42" r="3"/><circle cx="175" cy="68" r="3"/>
+      <circle cx="52" cy="95" r="3"/><circle cx="80" cy="118" r="3" fill="var(--red)"/>
+      <circle cx="100" cy="92" r="3" fill="var(--red)"/><circle cx="128" cy="100" r="3" fill="var(--red)"/><circle cx="110" cy="122" r="3" fill="var(--red)"/>
+      <circle cx="165" cy="105" r="3"/>
+      <circle cx="62" cy="158" r="3"/>
+      <circle cx="150" cy="145" r="3"/><circle cx="178" cy="170" r="3"/>
+    </g>
+    <g font-size="9" fill="currentColor" fill-opacity="0.75">
+      <text x="59" y="44">4.1</text><text x="62" y="63">4.3</text>
+      <text x="119" y="54">4.2</text>
+      <text x="156" y="41">4.0</text><text x="162" y="66">4.4</text>
+      <text x="56" y="94">4.5</text><text x="67" y="116">6.8</text>
+      <text x="104" y="91">7.0</text><text x="114" y="99">6.9</text><text x="114" y="121">6.6</text>
+      <text x="169" y="104">4.6</text>
+      <text x="66" y="157">4.1</text>
+      <text x="154" y="144">4.3</text><text x="165" y="168">4.7</text>
+    </g>
+    <text x="115" y="200" text-anchor="middle" font-size="12" fill="currentColor">points (height in m)</text>
+    <g stroke="currentColor" stroke-width="1.5" fill="none"><line x1="230" y1="105" x2="370" y2="105"/><polyline points="362,99 370,105 362,111"/></g>
+    <text x="300" y="96" text-anchor="middle" font-size="12" fill="currentColor">reduce each cell: max</text>
+    <g stroke="currentColor" stroke-opacity="0.35" fill="none">
+      <rect x="410" y="30" width="150" height="150"/>
+      <line x1="460" y1="30" x2="460" y2="180"/><line x1="510" y1="30" x2="510" y2="180"/>
+      <line x1="410" y1="80" x2="560" y2="80"/><line x1="410" y1="130" x2="560" y2="130"/>
+    </g>
+    <rect x="460" y="130" width="50" height="50" fill="var(--ink-soft)" fill-opacity="0.2"/>
+    <g font-size="13" text-anchor="middle" fill="currentColor">
+      <text x="435" y="60">4.3</text><text x="485" y="60">4.2</text><text x="535" y="60">4.4</text>
+      <text x="435" y="110" fill="var(--red)">6.8</text><text x="485" y="110" fill="var(--red)">7.0</text><text x="535" y="110">4.6</text>
+      <text x="435" y="160">4.1</text><text x="485" y="159" font-size="10" fill-opacity="0.7">nodata</text><text x="535" y="160">4.7</text>
+    </g>
+    <text x="485" y="200" text-anchor="middle" font-size="12" fill="currentColor">DSM cells (m)</text>
+  </svg>
+  <figcaption>Synthetic example. The left-middle cell straddles the edge of a stockpile, so <code>max</code> keeps the pile (6.8 m) and drops the ground point. The bottom-middle cell got no points: nodata, not 0.</figcaption>
+</figure>
+
+<p>The shared grid needs checking. Cell (<em>i</em>, <em>j</em>) must cover the same ground in both DSMs; a half-cell shift at a 3 m roof edge can invent 3 m of change. I would rasterize <em>both</em> clouds with one recipe, checking dimensions, transform, coordinate reference system (CRS), height datum and metre units, and converting nodata to NaN. Matching grids do not align misregistered surveys: horizontal offsets create false height changes on slopes. Registration needs independent stable surfaces or control.</p>
+
+<p>Cell size trades coverage against detail. At 200 points/m², a 0.05 m cell holds 0.5 points on average; a 0.2 m cell averages 8 points, reducing gaps but blurring edges. Clustering still leaves holes.</p>
+
+<h2>Step 2: fix the sign</h2>
+
+<blockquote><p><code>Δz = z_new − z_old</code>. Positive Δz means the surface rose: <strong>fill / deposition</strong>. Negative Δz means it dropped: <strong>cut / erosion</strong>. A cell is valid only when both DSMs have a value there.</p></blockquote>
+
+<p>The difference raster is a <strong>DEM of Difference (DoD)</strong>; here its inputs are DSMs. A sign flip turns fill into cut in someone's report. I would test known rises and falls through the job, API and display: "add material, fill must stay positive".</p>
+
+<aside class="callout"><strong>2.5D limit.</strong> One height per cell cannot describe vertical faces or overhangs; a wall moving sideways can show apparent rise and fall at its edges. The DoD suits top-down questions: stockpiles, excavation, earthworks.</aside>
+
+<h2>Step 3: estimate noise on stable ground</h2>
+
+<p>The obvious noise measure is the standard deviation of Δz. But the DoD holds the noise <em>and</em> the change you are looking for, and squaring lets a 3 m stockpile dominate the estimate. An inflated threshold can hide the change it should reveal. I use a robust alternative:</p>
+
+<figure class="sketch"><img src="/assets/blog/change-detection-dod-nmad/02.png" alt="Gold sampling boundaries enclose paved, bare-earth and grassy stable surfaces beside a red stockpile excluded from the samples." width="1200" height="800" loading="lazy" /><figcaption>Let stable ground tell you how noisy the pair is.</figcaption></figure>
+
+<ol>
+  <li><strong>Median</strong> <em>m</em>: the middle sorted value, or the mean of the central two for an even sample. Less sensitive to isolated extremes than the mean.</li>
+  <li><strong>MAD</strong> (median absolute deviation): median(|Δz − <em>m</em>|). At least half the values lie within <em>m</em> ± MAD.</li>
+  <li><strong>NMAD</strong> = 1.4826 · MAD: scaled to estimate σ for normal noise, with sampling uncertainty.</li>
+</ol>
+
+<p>Where does 1.4826 come from? For a normal population, 50% of values fall within approximately μ ± 0.6745σ. Here 0.6745 is the rounded 75th percentile of the standard normal. The population median equals μ, so MAD ≈ 0.6745σ and σ ≈ 1.4826 · MAD. Forget the factor and your threshold comes out a third too low.</p>
+
+<p>The median has a breakdown point of about 50%: roughly half the sample must be corrupted to move it arbitrarily far. NMAD can still be distorted well below that fraction. I would estimate it on <strong>stable areas</strong> known not to change, covering representative slopes and surface types. A flat yard alone cannot describe steep, vegetated ground. Whole-map NMAD is a labelled fallback.</p>
+
+<pre><code class="lang-py">import numpy as np
+
+def nmad(dz: np.ndarray) -> float:
+    """Robust spread of a DoD in metres; NaN marks nodata."""
+    v = np.asarray(dz, dtype=np.float64)
+    v = v[np.isfinite(v)]
+    if v.size == 0:
+        raise ValueError("No valid observations")
+    m = np.median(v)
+    return 1.4826 * float(np.median(np.abs(v - m)))
+
+def suggest_lod(dz, stable_mask, k=1.96, floor_m=0.05, step_m=0.01):
+    """Apply the floor, then round UP to the slider step."""
+    if not all(np.isfinite(x) and x > 0 for x in (k, floor_m, step_m)):
+        raise ValueError("Parameters must be finite and positive")
+    dz, mask = np.asarray(dz), np.asarray(stable_mask)
+    if mask.dtype != np.bool_ or mask.shape != dz.shape:
+        raise ValueError("Stable mask must be boolean and match dz")
+    sigma = nmad(dz[mask])
+    if sigma == 0:
+        raise ValueError("Zero spread: review sampling or quantization")
+    steps = np.ceil(max(k * sigma, floor_m) / step_m)
+    return float(steps * step_m), sigma
+</code></pre>
+
+<aside class="callout"><strong>Pitfall: never auto-subtract the median.</strong> It is tempting to treat median(Δz) as a GNSS height offset and remove it. But if 80% of the site was genuinely raised by 1 m, the median is +1 m, and subtracting it erases that fill and invents cut on the untouched 20%, while NMAD stays unchanged. I would report the stable-area median alongside NMAD: spread cannot reveal a constant bias. Removing an offset requires evidence from independently verified stable surfaces or control, with the correction recorded.</aside>
+
+<h2>Step 4: choose a detection threshold</h2>
+
+<p>The <strong>level of detection</strong> (LoD) is the smallest |Δz| I am willing to call change: LoD = <em>k</em> · σ before applying the floor and rounding, with σ estimated by NMAD. A cell counts as change when |Δz| ≥ LoD. Choosing <em>k</em> is choosing between two errors. For zero-centred normal noise with known σ, this is the expected share of truly <em>unchanged</em> cells that still cross ±<em>k</em>σ:</p>
+
+<table>
+  <thead><tr><th><em>k</em></th><th>1</th><th>1.96</th><th>2.5</th><th>3</th></tr></thead>
+  <tbody><tr><td>False alarms on stable ground</td><td>31.7%</td><td>5.0%</td><td>1.24%</td><td>0.27%</td></tr></tbody>
+</table>
+
+<p>Even <em>k</em> = 1.96 paints 1 in 20 stable cells; a higher <em>k</em> cleans the map but eats the gentle edge of a real pile. My first draft used a fixed 5 cm. With 4 cm of noise that is only 1.25σ, and about 21% of stable cells light up. I would suggest a pair-specific LoD on a 5 cm to 1 m slider in 1 cm steps. The 5 cm floor is a design choice, not a measured accuracy guarantee. A suggestion above 1 m needs review, not silent clipping. These rates describe individual cells, not the probability a highlighted cell is real change. With heavy tails, I would check stable-area exceedances directly.</p>
+
+<p>For independent surface errors, σ_Δ = √(σ₁² + σ₂²): two 3 cm surfaces give about 4.2 cm. With correlated errors, σ_Δ² = σ₁² + σ₂² − 2 Cov(e₁, e₂). Stable-area DoD NMAD estimates the combined spread directly; do not add another √2 factor. It still misses shared absolute errors and may not represent noisier parts of the map.</p>
+
+<figure>
+  <svg viewBox="0 0 640 260" width="100%" role="img" aria-labelledby="fig-hist-title">
+    <title id="fig-hist-title">Histogram of DoD values: a noise peak around zero inside a plus or minus LoD band, a long positive tail of fill and a negative bump of cut</title>
+    <rect x="282.6" y="20" width="51.7" height="180" fill="var(--gold)" fill-opacity="0.15"/>
+    <g stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="5 4"><line x1="282.6" y1="20" x2="282.6" y2="200"/><line x1="334.3" y1="20" x2="334.3" y2="200"/></g>
+    <rect x="85.0" y="189.7" width="7.6" height="10.3" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="93.6" y="189.7" width="7.6" height="10.3" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="102.2" y="189.7" width="7.6" height="10.3" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="110.8" y="189.7" width="7.6" height="10.3" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="119.4" y="189.7" width="7.6" height="10.3" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="128.0" y="189.7" width="7.6" height="10.3" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="136.7" y="195.1" width="7.6" height="4.9" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="145.3" y="195.1" width="7.6" height="4.9" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="153.9" y="195.1" width="7.6" height="4.9" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="162.5" y="195.1" width="7.6" height="4.9" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="171.1" y="195.1" width="7.6" height="4.9" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="179.7" y="195.1" width="7.6" height="4.9" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="188.3" y="195.1" width="7.6" height="4.9" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="197.0" y="195.1" width="7.6" height="4.9" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="205.6" y="195.1" width="7.6" height="4.9" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="214.2" y="195.1" width="7.6" height="4.9" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="222.8" y="195.1" width="7.6" height="4.9" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="231.4" y="195.1" width="7.6" height="4.9" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="240.0" y="195.1" width="7.6" height="4.9" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="248.7" y="195.0" width="7.6" height="5.0" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="257.3" y="194.0" width="7.6" height="6.0" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="265.9" y="188.9" width="7.6" height="11.1" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="274.5" y="176.6" width="7.6" height="23.4" fill="var(--navy)" fill-opacity="0.85"/>
+    <rect x="283.1" y="155.4" width="7.6" height="44.6" fill="var(--ink-soft)" fill-opacity="0.55"/>
+    <rect x="291.7" y="131.6" width="7.6" height="68.4" fill="var(--ink-soft)" fill-opacity="0.55"/>
+    <rect x="300.3" y="115.2" width="7.6" height="84.8" fill="var(--ink-soft)" fill-opacity="0.55"/>
+    <rect x="309.0" y="115.2" width="7.6" height="84.8" fill="var(--ink-soft)" fill-opacity="0.55"/>
+    <rect x="317.6" y="131.6" width="7.6" height="68.4" fill="var(--ink-soft)" fill-opacity="0.55"/>
+    <rect x="326.2" y="155.4" width="7.6" height="44.6" fill="var(--ink-soft)" fill-opacity="0.55"/>
+    <rect x="334.8" y="172.3" width="7.6" height="27.7" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="343.4" y="182.3" width="7.6" height="17.7" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="352.0" y="185.2" width="7.6" height="14.8" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="360.7" y="185.8" width="7.6" height="14.2" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="369.3" y="186.1" width="7.6" height="13.9" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="377.9" y="186.3" width="7.6" height="13.7" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="386.5" y="186.5" width="7.6" height="13.5" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="395.1" y="186.7" width="7.6" height="13.3" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="403.7" y="187.0" width="7.6" height="13.0" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="412.3" y="187.2" width="7.6" height="12.8" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="421.0" y="187.5" width="7.6" height="12.5" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="429.6" y="187.7" width="7.6" height="12.3" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="438.2" y="188.0" width="7.6" height="12.0" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="446.8" y="188.2" width="7.6" height="11.8" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="455.4" y="188.5" width="7.6" height="11.5" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="464.0" y="188.8" width="7.6" height="11.2" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="472.7" y="189.1" width="7.6" height="10.9" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="481.3" y="189.4" width="7.6" height="10.6" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="489.9" y="189.7" width="7.6" height="10.3" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="498.5" y="190.0" width="7.6" height="10.0" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="507.1" y="190.3" width="7.6" height="9.7" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="515.7" y="190.6" width="7.6" height="9.4" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="524.3" y="190.9" width="7.6" height="9.1" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="533.0" y="191.3" width="7.6" height="8.7" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="541.6" y="191.7" width="7.6" height="8.3" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="550.2" y="192.0" width="7.6" height="8.0" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="558.8" y="192.4" width="7.6" height="7.6" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="567.4" y="192.9" width="7.6" height="7.1" fill="var(--red)" fill-opacity="0.85"/>
+    <rect x="576.0" y="193.3" width="7.6" height="6.7" fill="var(--red)" fill-opacity="0.85"/>
+    <line x1="50" y1="200" x2="610" y2="200" stroke="currentColor" stroke-opacity="0.6"/>
+    <g font-size="11" fill="currentColor" text-anchor="middle">
+      <text x="93" y="216">−0.5</text><text x="308.5" y="216">0</text><text x="524" y="216">+0.5</text>
+      <text x="330" y="244">Δz = new − old (m), 2 cm bins, count on square-root scale</text>
+    </g>
+    <g font-size="11" fill="currentColor">
+      <text x="308.5" y="14" text-anchor="middle">±LoD (here 0.06 m)</text>
+      <text x="420" y="160" fill="var(--red)">fill: kept as change</text>
+      <text x="90" y="170" fill="var(--navy)">cut: kept as change</text>
+      <text x="345" y="100" fill-opacity="0.75">noise peak (stable ground)</text>
+    </g>
+  </svg>
+  <figcaption>Synthetic DoD histogram. Values inside the gold band are below detection; small real changes can be there too. Coloured bars also contain noise. Region filtering removes some leaks, but correlated noise can survive as a patch.</figcaption>
+</figure>
+
+<h2>A 5 × 5 example</h2>
+
+<p>Here is a tiny synthetic DoD (metres). Each cell is 0.5 m × 0.5 m, so the cell area is <em>A</em> = 0.25 m². The top row and left column, outlined in gold, represent an unchanged paved yard: my stable area.</p>
+
+<figure>
+  <svg viewBox="0 0 640 310" width="100%" role="img" aria-labelledby="fig-grid-title">
+    <title id="fig-grid-title">A 5 by 5 DoD grid before and after removing regions smaller than 0.5 square metres; an isolated cut cell is removed</title>
+    <text x="145" y="26" text-anchor="middle" font-size="13" fill="currentColor">Threshold at LoD = 0.06 m</text>
+    <text x="465" y="26" text-anchor="middle" font-size="13" fill="currentColor">After min region 0.5 m² (2 cells)</text>
+    <rect x="30" y="40" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="53" y="67" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">+0.02</text>
+    <rect x="76" y="40" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="99" y="67" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">−0.03</text>
+    <rect x="122" y="40" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="145" y="67" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">+0.01</text>
+    <rect x="168" y="40" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="191" y="67" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">0.00</text>
+    <rect x="214" y="40" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="237" y="67" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">−0.02</text>
+    <rect x="30" y="86" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="53" y="113" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">+0.04</text>
+    <rect x="76" y="86" width="46" height="46" fill="var(--red)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="99" y="113" text-anchor="middle" font-size="12" fill="currentColor">+0.35</text>
+    <rect x="122" y="86" width="46" height="46" fill="var(--red)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="145" y="113" text-anchor="middle" font-size="12" fill="currentColor">+0.42</text>
+    <rect x="168" y="86" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="191" y="113" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">−0.01</text>
+    <rect x="214" y="86" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="237" y="113" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">+0.03</text>
+    <rect x="30" y="132" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="53" y="159" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">−0.02</text>
+    <rect x="76" y="132" width="46" height="46" fill="var(--red)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="99" y="159" text-anchor="middle" font-size="12" fill="currentColor">+0.48</text>
+    <rect x="122" y="132" width="46" height="46" fill="var(--red)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="145" y="159" text-anchor="middle" font-size="12" fill="currentColor">+0.61</text>
+    <rect x="168" y="132" width="46" height="46" fill="var(--red)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="191" y="159" text-anchor="middle" font-size="12" fill="currentColor">+0.09</text>
+    <rect x="214" y="132" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="237" y="159" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">−0.04</text>
+    <rect x="30" y="178" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="53" y="205" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">+0.01</text>
+    <rect x="76" y="178" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="99" y="205" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">+0.05</text>
+    <rect x="122" y="178" width="46" height="46" fill="var(--red)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="145" y="205" text-anchor="middle" font-size="12" fill="currentColor">+0.12</text>
+    <rect x="168" y="178" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="191" y="205" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">−0.03</text>
+    <rect x="214" y="178" width="46" height="46" fill="var(--navy)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="237" y="205" text-anchor="middle" font-size="12" fill="currentColor">−0.25</text>
+    <rect x="30" y="224" width="46" height="46" fill="var(--navy)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="53" y="251" text-anchor="middle" font-size="12" fill="currentColor">−0.09</text>
+    <rect x="76" y="224" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="99" y="251" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">+0.02</text>
+    <rect x="122" y="224" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="145" y="251" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">−0.01</text>
+    <rect x="168" y="224" width="46" height="46" fill="var(--navy)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="191" y="251" text-anchor="middle" font-size="12" fill="currentColor">−0.22</text>
+    <rect x="214" y="224" width="46" height="46" fill="var(--navy)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="237" y="251" text-anchor="middle" font-size="12" fill="currentColor">−0.31</text>
+    <polygon points="30,40 260,40 260,86 76,86 76,270 30,270" fill="none" stroke="var(--gold)" stroke-width="2.5"/>
+    <rect x="350" y="40" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="373" y="67" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">+0.02</text>
+    <rect x="396" y="40" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="419" y="67" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">−0.03</text>
+    <rect x="442" y="40" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="465" y="67" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">+0.01</text>
+    <rect x="488" y="40" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="511" y="67" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">0.00</text>
+    <rect x="534" y="40" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="557" y="67" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">−0.02</text>
+    <rect x="350" y="86" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="373" y="113" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">+0.04</text>
+    <rect x="396" y="86" width="46" height="46" fill="var(--red)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="419" y="113" text-anchor="middle" font-size="12" fill="currentColor">+0.35</text>
+    <rect x="442" y="86" width="46" height="46" fill="var(--red)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="465" y="113" text-anchor="middle" font-size="12" fill="currentColor">+0.42</text>
+    <rect x="488" y="86" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="511" y="113" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">−0.01</text>
+    <rect x="534" y="86" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="557" y="113" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">+0.03</text>
+    <rect x="350" y="132" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="373" y="159" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">−0.02</text>
+    <rect x="396" y="132" width="46" height="46" fill="var(--red)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="419" y="159" text-anchor="middle" font-size="12" fill="currentColor">+0.48</text>
+    <rect x="442" y="132" width="46" height="46" fill="var(--red)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="465" y="159" text-anchor="middle" font-size="12" fill="currentColor">+0.61</text>
+    <rect x="488" y="132" width="46" height="46" fill="var(--red)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="511" y="159" text-anchor="middle" font-size="12" fill="currentColor">+0.09</text>
+    <rect x="534" y="132" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="557" y="159" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">−0.04</text>
+    <rect x="350" y="178" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="373" y="205" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">+0.01</text>
+    <rect x="396" y="178" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="419" y="205" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">+0.05</text>
+    <rect x="442" y="178" width="46" height="46" fill="var(--red)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="465" y="205" text-anchor="middle" font-size="12" fill="currentColor">+0.12</text>
+    <rect x="488" y="178" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="511" y="205" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">−0.03</text>
+    <rect x="534" y="178" width="46" height="46" fill="var(--navy)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="557" y="205" text-anchor="middle" font-size="12" fill="currentColor">−0.25</text>
+    <rect x="350" y="224" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="373" y="251" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">−0.09</text>
+    <rect x="353" y="227" width="40" height="40" fill="none" stroke="var(--gold)" stroke-width="2" stroke-dasharray="4 3"/>
+    <rect x="396" y="224" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="419" y="251" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">+0.02</text>
+    <rect x="442" y="224" width="46" height="46" fill="none" stroke="currentColor" stroke-opacity="0.25"/><text x="465" y="251" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.45">−0.01</text>
+    <rect x="488" y="224" width="46" height="46" fill="var(--navy)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="511" y="251" text-anchor="middle" font-size="12" fill="currentColor">−0.22</text>
+    <rect x="534" y="224" width="46" height="46" fill="var(--navy)" fill-opacity="0.30" stroke="currentColor" stroke-opacity="0.25"/><text x="557" y="251" text-anchor="middle" font-size="12" fill="currentColor">−0.31</text>
+    <g font-size="11" fill="currentColor">
+      <rect x="30" y="286" width="12" height="12" fill="var(--red)" fill-opacity="0.45"/><text x="48" y="296">fill (Δz ≥ +LoD)</text>
+      <rect x="160" y="286" width="12" height="12" fill="var(--navy)" fill-opacity="0.45"/><text x="178" y="296">cut (Δz ≤ −LoD)</text>
+      <rect x="290" y="286" width="12" height="12" fill="none" stroke="var(--gold)" stroke-width="2"/><text x="308" y="296">stable area</text>
+      <rect x="400" y="286" width="12" height="12" fill="none" stroke="var(--gold)" stroke-width="2" stroke-dasharray="3 2"/><text x="418" y="296">removed as speckle</text>
+    </g>
+  </svg>
+  <figcaption>Synthetic 5 × 5 DoD in metres, 0.5 m cells. Left: cells past ±0.06 m. Right: the isolated −0.09 cell is a 0.25 m² region, smaller than the 0.5 m² minimum, so it is dropped.</figcaption>
+</figure>
+
+<p><strong>Noise.</strong> The nine stable values, sorted: −0.09, −0.03, −0.02, −0.02, 0.00, 0.01, 0.01, 0.02, 0.04. The median is 0.00. The absolute deviations, sorted: 0, 0.01, 0.01, 0.02, <strong>0.02</strong>, 0.02, 0.03, 0.04, 0.09, so MAD = 0.02 m and NMAD = 1.4826 × 0.02 ≈ 0.030 m. The sample standard deviation of the same nine values is 0.038 m, already pulled up by the single −0.09.</p>
+
+<p>Over all 25 cells, real change included, the standard deviation jumps to 0.213 m (about 5.7 times the stable-area standard deviation) while NMAD rises only to 0.059 m: robust but not immune, since 9 of 25 cells are real change. (Nine cells only show the mechanics. Even a large sample needs spatial coverage: neighbouring errors are correlated.)</p>
+
+<p><strong>Threshold.</strong> 1.96 × 0.029652 ≈ 0.0581 m, rounded up to the 1 cm step: LoD = 0.06 m. Six cells pass as fill and four as cut. The +0.05 cell, maybe the toe of the pile, falls just short: the price of a threshold.</p>
+
+<h2>Step 5: sum volumes with bins</h2>
+
+<p>Each cell is the base of a column of height |Δz|. For square cells in a suitable metric projection, <em>A</em> = r². Volume sums the <em>full</em> retained differences; it does not subtract the threshold from each height:</p>
+
+<figure class="sketch"><img src="/assets/blog/change-detection-dod-nmad/03.png" alt="Red columns rise above a shared square grid while navy excavation cavities extend below it, showing fill heights and cut depths over equal cell areas." width="1200" height="800" loading="lazy" /><figcaption>One footprint at a time, full heights and depths add up to volume.</figcaption></figure>
+
+<blockquote><p><code>V_fill = A · Σ Δz</code> over cells with Δz ≥ t</p><p><code>V_cut = A · Σ |Δz|</code> over cells with Δz ≤ −t</p><p><code>V_net = V_fill − V_cut</code></p></blockquote>
+
+<p>In the example, fill = 0.25 × 2.07 = 0.5175 m³ and cut = 0.25 × 0.87 = 0.2175 m³ before cleanup. On unchanged ground, symmetric noise inflates expected fill and cut equally. The <em>net</em> can look right while both gross volumes are too high.</p>
+
+<p>The slider must update volumes instantly, but the browser does not hold tens of millions of Δz values. So the job writes a <strong>histogram with sums</strong>: per bin index <em>k</em>, the cell count <code>C[k]</code> and the sum of Δz, <code>S[k]</code>. With 1 cm bins and thresholds t = n · 1 cm:</p>
+
+<blockquote><p><code>V_fill(n) = A · Σ S[k]</code> for k ≥ n</p><p><code>V_cut(n) = A · |Σ S[k]|</code> for k ≤ −n</p><p><code>area_fill(n) = A · Σ C[k]</code> for k ≥ n</p></blockquote>
+
+<p>Whole bins give the retained sums without bin-centre approximation, apart from floating-point summation error. Boundary handling still needs a contract: <code>0.29 / 0.01</code> evaluates to <code>28.999999999999996</code>. Below, EPS admits values within about 10⁻¹¹ m below a boundary. Every mask must use the same bin rule; I would check both languages with shared binary64 fixtures. The browser consumes stored bins. This convention is numerical tolerance, not survey precision.</p>
+
+<pre><code class="lang-ts">type Bin = { count: number; sumDz: number };
+const W = 0.01;   // metres per slider step
+const K = 100;    // maximum threshold index; tail bins at +/-K
+const EPS = 1e-9; // in bin units, equivalent to 1e-11 m
+
+export const binIndex = (dz: number) =>
+  Math.sign(dz) * Math.min(K, Math.floor(Math.abs(dz) / W + EPS));
+
+export function buildHistogram(dz: Float64Array): Map&lt;number, Bin&gt; {
+  const h = new Map&lt;number, Bin&gt;();
+  for (const v of dz) {
+    if (!Number.isFinite(v)) continue; // nodata is skipped, never 0
+    const k = binIndex(v);
+    const b = h.get(k) ?? { count: 0, sumDz: 0 };
+    b.count += 1; b.sumDz += v;
+    h.set(k, b);
+  }
+  return h;
+}
+
+export function volumes(h: Map&lt;number, Bin&gt;, n: number, cellArea: number) {
+  if (!Number.isInteger(n) || n &lt; 1 || n &gt; K ||
+      !Number.isFinite(cellArea) || cellArea &lt;= 0) {
+    throw new RangeError("Invalid threshold index or cell area");
+  }
+  let fill = 0, cut = 0;
+  for (const [k, b] of h) {
+    if (k &gt;= n) fill += b.sumDz; else if (k &lt;= -n) cut -= b.sumDz;
+  }
+  return { fill: fill * cellArea, cut: cut * cellArea, net: (fill - cut) * cellArea };
+}</code></pre>
+
+<p>The ±K bins retain counts and original sums for all tail values. They remain valid at every supported positive threshold. Prefix/suffix sums can make slider lookups constant-time.</p>
+
+<h2>Step 6: filter small regions</h2>
+
+<p>Some noise forms isolated specks; some real change does too. I would group the cells of each mask into connected components (8-connectivity: edge or corner neighbours) and drop regions below a minimum area, given in m² and converted with N = ⌈area / A⌉. Fill and cut use separate masks, so touching opposite signs never merge. Corner contact joins regions under this rule; missing cells do not.</p>
+
+<p>In the example, 0.5 m² means N = 2 cells. Fill forms one 6-cell region and survives. Cut forms a 3-cell region plus the lone −0.09 cell, which is removed: the same noisy cell that inflated the standard deviation. After cleanup:</p>
+
+<table>
+  <thead><tr><th></th><th>Area</th><th>Volume</th></tr></thead>
+  <tbody>
+    <tr><td>Fill</td><td>1.50 m² (6 cells)</td><td>0.25 × 2.07 ≈ 0.518 m³</td></tr>
+    <tr><td>Cut</td><td>0.75 m² (3 cells)</td><td>0.25 × 0.78 = 0.195 m³</td></tr>
+    <tr><td>Net</td><td></td><td>+0.323 m³</td></tr>
+  </tbody>
+</table>
+
+<aside class="callout"><strong>Two volume totals.</strong> The slider total comes from the histogram, <em>before</em> region filtering; per-region volumes come <em>after</em>. Here they differ by 0.0225 m³ on the cut side. Label both. A histogram loses cell positions, so it cannot recompute region filtering when the threshold changes; the job must rerun it or serve precomputed results. A minimum region also deletes real change smaller than it, like a 0.3 m² pothole: choose it from the smallest object users care about.</aside>
+
+<h2>What I'd show the user</h2>
+
+<ul>
+  <li><strong>A diverging colour ramp</strong> centred on zero: warm for fill, cool for cut, grey where |Δz| &lt; LoD. A <strong>legend is mandatory</strong> and says "new − old".</li>
+  <li><strong>The threshold slider</strong>, pre-set to the suggested LoD: "NMAD 3.0 cm on stable area, LoD 6 cm", alongside the stable-area median, valid sample count and coverage.</li>
+  <li><strong>Volumes with qualified uncertainty.</strong> On a <em>fixed</em> N-cell footprint with equal error standard deviation σ, independent noise gives volume standard deviation A·√N·σ; perfect positive correlation gives the upper limit A·N·σ. Using NMAD as σ gives 0.25 × 6 × 0.030 = 0.045 m³ in that limiting model. I would label this a noise scale, not a confidence interval: selection by threshold, bias and varying errors need separate treatment. A constant offset shifts an unthresholded fixed-area net volume by offset × area (2 cm over 1,000 m² is 20 m³).</li>
+  <li><strong>Nodata area, separately.</strong> Within the comparison footprint, cells missing from either flight are "unknown", not "unchanged".</li>
+  <li><strong>Plain caveats.</strong> A newly parked truck counts as fill.</li>
+</ul>
+
+<p>To calibrate <em>k</em>, I would use separate repeat flights over verified unchanged ground. Reprocessing identical photos only tests processing repeatability and may return identical surfaces. With a fixed region-size rule, under about 2% surviving area is an initial acceptance target, not a confidence level. I would validate on held-out null pairs and synthetic pile-and-pit pairs, checking missed change as well as false alarms.</p>
+
+<h2>Takeaways</h2>
+
+<ul>
+  <li><strong>Use aligned surfaces</strong>: one recipe, one shared grid, nodata stays nodata.</li>
+  <li><strong>Fix the sign once</strong> (new − old, positive = fill) and test it.</li>
+  <li><strong>Estimate spread with NMAD on stable ground.</strong> Remember the 1.4826, and check bias separately.</li>
+  <li><strong>A threshold is a trade-off.</strong> Derive it (<em>k</em> · NMAD), show it, let people move it.</li>
+  <li><strong>Count and sum per integer bin</strong> preserve retained volumes at supported thresholds; share the boundary rule.</li>
+  <li><strong>Never silently "fix" a vertical offset.</strong></li>
+</ul>
+
+<p>The arithmetic is small; the assumptions carry the weight. I want users to see the threshold, its evidence and its limits, so a clear map does not promise more certainty than the surveys can support.</p>
+        </div>
+        <footer class="post__foot">
+          <div class="post__author">
+            <img src="/assets/favicon.svg" width="30" height="40" alt="" />
+            <p><strong>Hoang Anh Tuan</strong> builds drone inspection software: FastAPI and AWS pipelines, and the 3D viewers on top of them. <a href="/#contact">Say hello</a>.</p>
+          </div>
+          <nav class="pager" data-post-nav aria-label="More posts"></nav>
+        </footer>
+      </article>
+    </main>
+    <footer class="blog-foot">
+      <p class="footer"><span class="tile tile--red tile--xs">印</span>© 2026 Hoang Anh Tuan · <a href="/">tuanha.dev</a></p>
+    </footer>
+  </body>
+</html>

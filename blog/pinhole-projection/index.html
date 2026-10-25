@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>From 3D Point to Pixel: Which Drone Photos See the Spot You Clicked? · Hoang Anh Tuan</title>
+    <meta name="description" content="Pinhole projection, camera poses and field-of-view tests for linking photos to a 3D model." />
+    <meta name="theme-color" content="#fbf8f0" />
+    <link rel="canonical" href="https://tuanha.dev/blog/pinhole-projection/" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/assets/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://tuanha.dev/blog/pinhole-projection/" />
+    <meta property="og:site_name" content="tuanha.dev" />
+    <meta property="og:title" content="From 3D Point to Pixel: Which Drone Photos See the Spot You Clicked? · Hoang Anh Tuan" />
+    <meta property="og:description" content="Pinhole projection, camera poses and field-of-view tests for linking photos to a 3D model." />
+    <meta property="og:image" content="https://tuanha.dev/assets/blog/pinhole-projection/cover.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="article:published_time" content="2026-10-09" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&family=Yomogi&family=Be+Vietnam+Pro:ital,wght@0,400;0,600;1,400&display=swap"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <script>
+      document.documentElement.classList.add('js', 'intro-seen');
+      // Theme: the visitor's saved choice, otherwise the system setting. Set before first paint.
+      try {
+        const saved = localStorage.getItem('theme');
+        document.documentElement.dataset.theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      } catch {
+        document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+    </script>
+    <script type="module" src="/src/blog.js"></script>
+  </head>
+  <body class="blog" data-slug="pinhole-projection">
+    <a class="skip" href="#main">Skip to content</a>
+    <canvas id="petals" aria-hidden="true"></canvas>
+    <header class="nav" data-nav></header>
+    <main id="main" tabindex="-1">
+      <article class="post">
+        <header class="post__head">
+          <a class="post__back" href="/blog/">← All field notes</a>
+          <p class="sec-head__chapter"><span class="tile tile--red">記</span>「 三次元の点から画素へ 」</p>
+          <h1 class="post__title">From 3D Point to Pixel: Which Drone Photos See the Spot You Clicked?</h1>
+          <p class="post__meta"><time datetime="2026-10-09">2026-10-09</time> · 13 min read</p>
+          <ul class="tags"><li>computer vision</li><li>3d</li><li>geometry</li></ul>
+        </header>
+        <figure class="post__cover"><img src="/assets/blog/pinhole-projection/cover.png" alt="" width="1200" height="675" /></figure>
+        <div class="post__body">
+<p class="post__lead">You spot a crack on a 3D model. Finding the matching view among 500 drone photos takes more work. I built a feature for a drone inspection platform that connects the two: click a point on the model or point cloud, and a panel ranks candidate photos with a marker at the projected location. The math is small enough to fit in one function. Getting the axes, lens assumptions and meaning of “in view” right takes more care. Here is how I worked through it.</p>
+
+<h2>One point, many photos</h2>
+
+<p>For each photo we know where the camera was and which way it was pointing (its <strong>pose</strong>), and we have its field of view or camera calibration. For the clicked point <code>P</code> we know its 3D position. The question for each photo is: <em>if I trace a straight line from <code>P</code> into this camera, does it land inside the image rectangle, and on which pixel?</em> Run that test against every photo, keep the hits, sort them. A hit means the point is inside the viewing frustum; it may still be hidden behind something.</p>
+
+<figure class="sketch"><img src="/assets/blog/pinhole-projection/01.png" alt="A drone surveys a cracked concrete structure while gold lines connect one red inspection marker to three photographs of the same spot." width="1200" height="800" loading="lazy" /><figcaption>One small spot, several ways to see it.</figcaption></figure>
+
+<h2>The pinhole model</h2>
+
+<p>Picture a closed box with a tiny hole in the front. Light from every point in the scene travels in a straight line through the hole and lands on the back wall. I approximate the lens as a central projection: scene rays pass through one <strong>camera centre</strong>. Drawing a virtual image plane <em>in front of</em> that centre keeps the picture upright. Its distance <code>f</code> sets the projection scale, or <strong>focal length</strong>; later I express it in pixels.</p>
+
+<figure>
+<svg viewBox="0 0 640 260" width="100%" role="img" aria-labelledby="pinhole-title" xmlns="http://www.w3.org/2000/svg">
+  <title id="pinhole-title">Side view of a pinhole camera: a ray from point P at depth Z and offset X passes through the camera centre and crosses the image plane at distance f, at offset f times X over Z</title>
+  <line x1="40" y1="200" x2="610" y2="200" stroke="var(--ink-soft)" stroke-width="2" stroke-dasharray="6 6"/>
+  <text x="560" y="222" font-size="14" fill="var(--ink-soft)" font-family="monospace">z (depth)</text>
+  <rect x="32" y="192" width="16" height="16" fill="var(--navy)"/>
+  <text x="20" y="232" font-size="14" fill="var(--navy)" font-family="monospace">camera O</text>
+  <line x1="180" y1="60" x2="180" y2="230" stroke="var(--navy)" stroke-width="4"/>
+  <text x="150" y="50" font-size="14" fill="var(--navy)" font-family="monospace">image plane</text>
+  <line x1="40" y1="200" x2="560" y2="60" stroke="var(--red)" stroke-width="2"/>
+  <rect x="552" y="52" width="16" height="16" fill="var(--red)"/>
+  <text x="576" y="66" font-size="16" fill="var(--red)" font-family="monospace">P</text>
+  <rect x="174" y="156.31" width="12" height="12" fill="var(--gold)"/>
+  <line x1="560" y1="60" x2="560" y2="200" stroke="var(--green)" stroke-width="2"/>
+  <text x="568" y="140" font-size="14" fill="var(--green)" font-family="monospace">X</text>
+  <line x1="196" y1="162.31" x2="196" y2="200" stroke="var(--gold)" stroke-width="2"/>
+  <text x="204" y="188" font-size="14" fill="var(--gold)" font-family="monospace">Δu</text>
+  <text x="100" y="250" font-size="14" fill="currentColor" font-family="monospace">← f →</text>
+  <text x="20" y="18" font-size="13" fill="currentColor" font-family="monospace">Z = depth from O to P</text>
+</svg>
+<figcaption>Two similar triangles share the angle at the camera centre, so Δu / f = X / Z.</figcaption>
+</figure>
+
+<p>Because the small triangle and the big triangle are similar, the offset on the image is:</p>
+
+<pre><code class="lang-text">Δu = f · X / Z</code></pre>
+
+<p>That division by depth is the entire trick, and it explains two things you already know intuitively. Things further away look smaller: the same 20 m offset at 200 m lands half as far from the centre as at 100 m. And a single photo cannot tell you depth: every point along one ray has the same <code>X/Z</code> and <code>Y/Z</code>, so they all hit the same pixel. I need the clicked point’s 3D position from another source: here, a model built by structure from motion.</p>
+
+<h2>World to camera</h2>
+
+<p>The formula above needs <code>X</code>, <code>Y</code>, <code>Z</code> measured <em>from the camera, along the camera's own axes</em>. We start with world positions and an orientation. Two steps connect them to the projection formula.</p>
+
+<figure class="sketch"><img src="/assets/blog/pinhole-projection/02.png" alt="Two observers facing different directions on a fixed ground grid have gold sight lines to the same tree." width="1200" height="800" loading="lazy" /><figcaption>The tree stays put; its direction depends on which way you face.</figcaption></figure>
+
+<p><strong>Step 1: subtract.</strong> Express the clicked point and camera centre in the <em>same</em> local East/North/Up (ENU) frame, in metres, and subtract: <code>d = P − C</code>. Align reconstruction coordinates to that frame first, including scale and height datum. Use the camera centre, not an uncorrected navigation-antenna position. The result might be “20 m East, 30 m North and 100 m below the camera”.</p>
+
+<p><strong>Step 2: rotate into the camera frame.</strong> "20 m East" still does not tell you whether the point is on the left or the right of the photo; that depends on which way the camera faces. It is like giving directions to someone: "the tree is 20 m East" becomes "the tree is 20 m to your right" only once you know they are facing North.</p>
+
+<p>I used a common computer-vision camera convention:</p>
+
+<ul>
+  <li><code>x</code> points to the <strong>right</strong> of the image,</li>
+  <li><code>y</code> points <strong>down</strong> the image,</li>
+  <li><code>z</code> points <strong>forward</strong>, along the viewing direction.</li>
+</ul>
+
+<p>Image pixel rows also count downwards from the top edge, so camera <code>y</code> and pixel <code>v</code> grow in the same direction. That gives the projection one less sign flip to get wrong.</p>
+
+<p>Each pose stores its orientation as a unit <strong>quaternion</strong> <code>q = [w, x, y, z]</code> that rotates vectors <em>from camera axes to ENU</em>. Our backend converted gimbal angles or reconstruction output into that convention once. For body-relative gimbal angles, compose aircraft attitude and camera mounting rotation too; reconstruction poses may already be world-to-camera. Quaternions avoid an Euler-angle singularity in the frontend, but cannot repair an incorrect pose conversion. To go the other way, ENU into camera, you apply the inverse rotation, which for a unit quaternion is just its conjugate <code>[w, −x, −y, −z]</code>. Equivalently: take the dot product of <code>d</code> with the camera's right, down and forward axes.</p>
+
+<aside class="callout">
+<p><strong>Pitfall:</strong> write the direction of every rotation into its name ("q rotates camera → ENU"). Using the forward rotation where you need the inverse generally gives the wrong direction, not a simple mirror. The straight-down, North-up rotation here is its own inverse, so that test alone cannot catch the mistake. Include an oblique pose.</p>
+</aside>
+
+<h2>Finding focal length</h2>
+
+<p>With the axes settled, the lens sets the image scale. When calibrated pixel focal lengths are unavailable, I estimate them from a horizontal field of view <code>fovH</code> or a 35 mm-equivalent focal length. The ray that grazes the right edge of the image sits <code>W/2</code> pixels from the centre, at depth <code>f</code>, and makes an angle of <code>fovH/2</code> with the optical axis. Basic trigonometry gives:</p>
+
+<pre><code class="lang-text">f = (W / 2) / tan(fovH / 2)        // focal length in pixels</code></pre>
+
+<p>For a 4000 × 3000 image with a 90° horizontal field of view, <code>f = 2000 / tan 45° = 2000 px</code>. For square pixels, one <code>f</code> serves both axes. Scale the <em>tangent</em>, not the angle: the vertical half-angle is <code>atan(1500 / 2000) ≈ 36.9°</code>, not <code>(90°/2) × 3/4 = 33.75°</code>.</p>
+
+<aside class="callout">
+<p><strong>Pitfall:</strong> “35 mm-equivalent” uses the <em>diagonal</em> of a 36 × 24 mm frame. For square pixels, <code>f_px = f_35 · hypot(W, H) / hypot(36, 24)</code>, with <code>f_35</code> in millimetres. Using 36 mm as the equivalent width is only right for 3:2 images. For a synthetic 4000 × 3000 image at 24 mm equivalent, it gives 73.7° horizontally instead of 71.6°, shifting a true edge point inward by about 77 px. This assumes the metadata describes the delivered crop.</p>
+</aside>
+
+<h2>Metres to pixels</h2>
+
+<p>Assuming a centred principal point and no distortion, the camera coordinates <code>(x, y, z)</code> become:</p>
+
+<pre><code class="lang-text">u = W/2 + f · x / z        // column, from the left edge
+v = H/2 + f · y / z        // row, from the top edge</code></pre>
+
+<p>I measure continuous image coordinates from the top-left outer corner, so pixel centres are at half-integers. Calibration that places the first pixel centre at <code>(0, 0)</code> needs a half-pixel conversion. Rotating, cropping or resizing a displayed photo also requires transforming the marker coordinates.</p>
+
+<p><strong>A worked example with round numbers.</strong> A drone hovers 100 m above flat ground, camera pointing straight down, top of the photo facing North. The image is 4000 × 3000 px, <code>fovH = 90°</code>, so <code>f = 2000</code>. The clicked point <code>P</code> is on the ground 20 m East and 30 m North of the spot directly below the drone.</p>
+
+<ol>
+  <li><strong>Subtract:</strong> <code>d = (20, 30, −100)</code> in (East, North, Up).</li>
+  <li><strong>Rotate:</strong> for this pose, camera right = East, camera down = <em>South</em> (top of image is North), camera forward = down to the ground. So <code>x = 20</code>, <code>y = −30</code> (30 m North is 30 m "up the image"), <code>z = 100</code>.</li>
+  <li><strong>Project:</strong> <code>u = 2000 + 2000 · 20/100 = 2400</code>, <code>v = 1500 + 2000 · (−30/100) = 900</code>.</li>
+</ol>
+
+<p>Sanity check with intuition first: the point is East and North, so it should land right of centre and above centre. Pixel <code>(2400, 900)</code> does exactly that, because <code>v</code> counts down from the top. Another way to see it: at 100 m depth, <code>f / z = 20</code> px per metre on the ground, so 20 m East is 400 px right and 30 m North is 600 px up.</p>
+
+<figure>
+<svg viewBox="0 0 400 320" width="100%" role="img" aria-labelledby="frame-title" xmlns="http://www.w3.org/2000/svg">
+  <title id="frame-title">A 4000 by 3000 pixel image frame with North at the top; the projected point sits at pixel 2400, 900, right of and above the centre at 2000, 1500</title>
+  <rect x="40" y="40" width="320" height="240" fill="none" stroke="currentColor" stroke-width="3"/>
+  <text x="40" y="30" font-size="12" fill="var(--ink-soft)" font-family="monospace">(0,0)</text>
+  <text x="290" y="300" font-size="12" fill="var(--ink-soft)" font-family="monospace">(4000,3000)</text>
+  <text x="188" y="30" font-size="13" fill="var(--navy)" font-family="monospace">N ↑</text>
+  <line x1="200" y1="40" x2="200" y2="280" stroke="var(--ink-soft)" stroke-dasharray="4 4"/>
+  <line x1="40" y1="160" x2="360" y2="160" stroke="var(--ink-soft)" stroke-dasharray="4 4"/>
+  <rect x="195" y="155" width="10" height="10" fill="var(--navy)"/>
+  <text x="208" y="178" font-size="12" fill="var(--navy)" font-family="monospace">centre (2000,1500)</text>
+  <line x1="200" y1="160" x2="232" y2="160" stroke="var(--green)" stroke-width="3"/>
+  <line x1="232" y1="160" x2="232" y2="112" stroke="var(--green)" stroke-width="3"/>
+  <text x="236" y="146" font-size="12" fill="var(--green)" font-family="monospace">−600 px</text>
+  <text x="198" y="152" font-size="12" fill="var(--green)" font-family="monospace">+400</text>
+  <rect x="226" y="106" width="12" height="12" fill="var(--red)"/>
+  <text x="216" y="96" font-size="13" fill="var(--red)" font-family="monospace">P (2400, 900)</text>
+  <text x="8" y="160" font-size="12" fill="var(--ink-soft)" font-family="monospace">v↓</text>
+</svg>
+<figcaption>Rows count downward, so "30 m North" becomes a negative camera y and a smaller row number.</figcaption>
+</figure>
+
+<h3>Behind the camera</h3>
+
+<p>The formula happily returns a pixel for a point <em>behind</em> the camera. Flip the example so the point is 100 m above the drone: <code>z = −100</code>, and the division flips both signs, putting a perfectly valid-looking dot at <code>(1600, 2100)</code>, mirrored across the centre. So the rule is: reject when <code>z ≤ 0</code>, <em>before</em> dividing. A nadir (straight-down) dataset may never exercise this branch; an oblique photo can put a clicked point behind the camera.</p>
+
+<p>Here is the projection test, written fresh for this post. Validate finite inputs once at ingestion: positive image dimensions, <code>0 &lt; fovHDeg &lt; 180</code>, and a normalised quaternion in the declared order. The displacement <code>d</code> is <code>P − C</code> in ENU metres.</p>
+
+<pre><code class="lang-ts">type Vec3 = [number, number, number];
+type Quat = [number, number, number, number]; // [w, x, y, z], camera -&gt; ENU
+
+const cross = (a: Vec3, b: Vec3): Vec3 =&gt;
+  [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+
+// Unit quaternion: v' = v + 2w(r×v) + 2r×(r×v), r = [x, y, z]
+function rotate([w, x, y, z]: Quat, v: Vec3): Vec3 {
+  const t = cross([x, y, z], v);
+  const tt = cross([x, y, z], t);
+  return [0, 1, 2].map((i) =&gt; v[i] + 2 * w * t[i] + 2 * tt[i]) as Vec3;
+}
+
+function project(d: Vec3, q: Quat, fovHDeg: number, W: number, H: number) {
+  const [w, x, y, z] = q;
+  const [cx, cy, cz] = rotate([w, -x, -y, -z], d); // ENU -&gt; camera (inverse)
+  if (!(cz &gt; 0)) return null;                      // behind, at centre plane, or NaN
+  const f = W / 2 / Math.tan((fovHDeg * Math.PI) / 360);
+  const u = W / 2 + (f * cx) / cz;
+  const v = H / 2 + (f * cy) / cz;
+  if (!Number.isFinite(u) || !Number.isFinite(v)) return null;
+  if (u &lt; 0 || u &gt;= W || v &lt; 0 || v &gt;= H) return null; // outside the frame
+  return { u, v };
+}
+
+// Nadir, top of image = North: q = [0, 1, 0, 0] (180° about East)
+project([20, 30, -100], [0, 1, 0, 0], 90, 4000, 3000); // { u: 2400, v: 900 }</code></pre>
+
+<p>Note that <code>fovHDeg * Math.PI / 360</code> is "half the angle, in radians" in one step. The half-open bounds <code>[0, W)</code> let <code>floor(u)</code> select columns <code>0 … W−1</code>. Near an edge, floating-point noise and pose uncertainty can change acceptance; avoid treating that boundary as ground truth.</p>
+
+<h2>Three ways to test the view</h2>
+
+<p>Before settling on projection, I weighed three approaches:</p>
+
+<table>
+  <thead>
+    <tr><th>Approach</th><th>How</th><th>Where it breaks</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Angle cone</td><td>Angle between the camera's forward axis and the ray to <code>P</code> is below a chosen half-angle</td><td>An image is a rectangle, not a circle. For a landscape image, a horizontal-FOV cone accepts points above and below the frame but misses some corners; a diagonal-FOV cone includes all corners and extends past every edge. No pixel position either.</td></tr>
+    <tr><td>Ground footprint</td><td>Cast the four corner rays onto the ground, test point-in-polygon</td><td>Needs a ground surface. Oblique shots near the horizon have corner rays that never hit the ground, and a crack on a vertical wall is not on the ground at all.</td></tr>
+    <tr><td>Project and bounds-check</td><td>The function above</td><td>Requires matching poses and intrinsics. Exact for the assumed pinhole model; returns a marker for any orientation, but does not test occlusion.</td></tr>
+  </tbody>
+</table>
+
+<p>We used the third. A footprint answers a 2D question, and our users click on 3D structures.</p>
+
+<p>Two practical details mattered. First, <strong>cheap tests go first</strong>: compare <code>d·d</code> with <code>1000²</code> before rotating or dividing. That 1 km cutoff is an inspection-specific heuristic; it can exclude otherwise valid projections. In my implementation, a few thousand poses took a few milliseconds on click, on the main thread. Second, photos missing orientation or lens data used a crude cone around straight down, with no marker, ranked last and labelled approximate. A cone needs an explicit half-angle: a 45° full opening means 22.5° from its axis. These guesses stay separate from projected matches.</p>
+
+<h2>Distance, then centrality</h2>
+
+<p>Surveys overlap heavily, so a single click often matches a dozen photos. The requested order was nearest first by Euclidean camera-to-point distance, then most central among near-equals. That is a browsing preference, not a guarantee of sharpness or useful surface detail. Centrality is the distance from the centre measured in the image's own proportions and scaled so the centre is 0 and a corner is 1:</p>
+
+<figure class="sketch"><img src="/assets/blog/pinhole-projection/03.png" alt="Three marked photographs of cracked concrete are grouped into distance bands, with the more central marker first in the shared band." width="1200" height="800" loading="lazy" /><figcaption>Nearby views come first, then a little room around the point.</figcaption></figure>
+
+<pre><code class="lang-text">a      = H / W
+centre = hypot(u/W − 0.5, (v/H − 0.5)·a) / hypot(0.5, 0.5·a)</code></pre>
+
+<p>Multiplying the vertical term by the aspect ratio makes it equivalent to measuring in pixels; without it a 3:2 image treats the top edge and the side edge as equally far from the centre.</p>
+
+<p>The tricky bit is "near-equal". A comparator that says "within 0.5 m counts as a tie" is <em>not transitive</em>: A ties B, B ties C, but A beats C. Sort algorithms assume transitivity, and the list order ends up depending on input order. I quantise distance into bands and sort lexicographically. Distances must be finite and nonnegative, centrality finite, and photo IDs unique:</p>
+
+<pre><code class="lang-ts">interface Match { id: string; distance: number; centre: number }
+
+const BAND_M = 0.5;
+const band = (m: Match) =&gt; Math.floor(m.distance / BAND_M);
+
+function rank(matches: Match[]): Match[] {
+  return [...matches].sort(
+    (a, b) =&gt;
+      band(a) - band(b) ||        // nearer band first
+      a.centre - b.centre ||      // then more central
+      a.distance - b.distance ||  // then exact distance
+      (a.id &lt; b.id ? -1 : a.id &gt; b.id ? 1 : 0), // deterministic final tie
+  );
+}</code></pre>
+
+<p>Here is how that plays out with the same lens (4000 × 3000, 90°), all cameras pointing straight down with image tops facing North, <code>P</code> on the ground at the origin. Pixels are rounded for display; ranks use unrounded values:</p>
+
+<table>
+  <thead>
+    <tr><th>Camera (E, N, height)</th><th>Distance</th><th>Band</th><th>Pixel</th><th>Centre</th><th>Rank</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>B (0, 0, 100)</td><td>100.00 m</td><td>200</td><td>(2000, 1500)</td><td>0.00</td><td>1</td></tr>
+    <tr><td>E (0, −10, 100.4)</td><td>100.90 m</td><td>201</td><td>(2000, 1301)</td><td>0.08</td><td>2</td></tr>
+    <tr><td>D (30, 0, 96)</td><td>100.58 m</td><td>201</td><td>(1375, 1500)</td><td>0.25</td><td>3</td></tr>
+    <tr><td>C (20, 0, 100)</td><td>101.98 m</td><td>203</td><td>(1600, 1500)</td><td>0.16</td><td>4</td></tr>
+    <tr><td>A (−20, −30, 100)</td><td>106.30 m</td><td>212</td><td>(2400, 900)</td><td>0.29</td><td>5</td></tr>
+    <tr><td>F (0, −80, 100)</td><td>128.06 m</td><td>–</td><td>outside</td><td>–</td><td>rejected</td></tr>
+  </tbody>
+</table>
+
+<p>E is about 32 cm further than D but wins because both fall in band 201 and E is more central. F is rejected because <code>P</code> is 80 m North of it: <code>|y/z| = 0.8</code> exceeds the vertical half-tangent <code>1500/2000 = 0.75</code>. The honest cost of bands shows at their edges: a camera at 100.49 m (band 200) beats a dead-centre camera at 100.51 m (band 201). I accepted that. The bands express that tradeoff explicitly; the ID tie-break keeps even exact ties independent of input order.</p>
+
+<h2>"In view" is not "visible"</h2>
+
+<p>Everything so far answers one question: does the ray from <code>P</code> land inside the frame? It says nothing about what sits <em>between</em> the camera and <code>P</code>. A photo of the back of a wall projects the crack on the front perfectly well.</p>
+
+<figure>
+<svg viewBox="0 0 560 220" width="100%" role="img" aria-labelledby="occl-title" xmlns="http://www.w3.org/2000/svg">
+  <title id="occl-title">Two cameras whose frusta both contain point P; the ray from the right camera is blocked by a wall before reaching P</title>
+  <line x1="20" y1="200" x2="540" y2="200" stroke="var(--ink-soft)" stroke-width="2"/>
+  <rect x="300" y="80" width="20" height="120" fill="var(--ink-soft)"/>
+  <text x="292" y="72" font-size="13" fill="var(--ink-soft)" font-family="monospace">wall</text>
+  <rect x="264" y="148" width="14" height="14" fill="var(--red)"/>
+  <text x="248" y="182" font-size="14" fill="var(--red)" font-family="monospace">P</text>
+  <rect x="60" y="30" width="20" height="14" fill="var(--navy)"/>
+  <text x="40" y="22" font-size="13" fill="var(--navy)" font-family="monospace">cam 1</text>
+  <line x1="70" y1="44" x2="271" y2="155" stroke="var(--green)" stroke-width="2"/>
+  <text x="120" y="120" font-size="13" fill="var(--green)" font-family="monospace">sees P</text>
+  <rect x="470" y="30" width="20" height="14" fill="var(--navy)"/>
+  <text x="452" y="22" font-size="13" fill="var(--navy)" font-family="monospace">cam 2</text>
+  <line x1="480" y1="44" x2="320" y2="128.98" stroke="var(--gold)" stroke-width="2"/>
+  <line x1="320" y1="128.98" x2="271" y2="155" stroke="var(--gold)" stroke-width="2" stroke-dasharray="4 4"/>
+  <rect x="314" y="122.98" width="12" height="12" fill="var(--gold)"/>
+  <text x="380" y="120" font-size="13" fill="var(--gold)" font-family="monospace">first hit ≠ P</text>
+</svg>
+<figcaption>Both cameras pass the projection test. A ray cast against the model reveals that camera 2 is blocked.</figcaption>
+</figure>
+
+<p>We shipped without an occlusion test and documented the limitation. Opening a photo lets the reviewer check whether the spot is visible. I would add a cautious second pass:</p>
+
+<ul>
+  <li>Run it <em>after</em> the frustum test, only for the dozen or so matches, not every pose.</li>
+  <li>Raycast the mesh from each matching camera towards <code>P</code>. A hit closer than <code>|P − C| − ε</code> suggests a blocker; choose <code>ε</code> from reconstruction uncertainty and feature scale. A depth buffer must come from that photo’s camera and be converted to comparable ray distances; the current viewer’s buffer is insufficient.</li>
+  <li><strong>Flag, don't drop.</strong> Reconstructed models have holes and floating noise, so a "blocked" verdict is itself uncertain. Mark the row "possibly hidden" and push it down the list.</li>
+</ul>
+
+<p>Marker accuracy has limits too. Ignoring distortion can cause larger errors near the edges; an incorrect principal point shifts markers throughout the image. The size depends on calibration and pose quality. Use calibrated <code>f_x, f_y, c_x, c_y</code> when available. For raw photos, apply the matching forward distortion model to <code>x/z, y/z</code> before converting to pixels. For undistorted photos, use their adjusted intrinsics without reapplying distortion. Neither fixes pose or reconstruction errors, and this marker is no basis for millimetre measurements.</p>
+
+<h2>Takeaways</h2>
+
+<ul>
+  <li><strong>The pinhole model is one division.</strong> Everything hard is in getting the point into camera coordinates with the right axes and the right rotation direction.</li>
+  <li><strong>Pick a camera convention that matches pixels.</strong> x right, y down, z forward means camera y and image rows grow together, with no sign flip to forget.</li>
+  <li><strong>Check <code>z &gt; 0</code> before you divide.</strong> Otherwise points behind the camera reappear mirrored.</li>
+  <li><strong>Project with explicit assumptions.</strong> Bounds-checking is exact for the assumed pinhole model and supplies the marker location; image preprocessing must match.</li>
+  <li><strong>Make ties transitive.</strong> Distance bands plus explicit tie-breaks give a reproducible order.</li>
+  <li><strong>Write tests with answers you can see.</strong> Before any real data, I wrote five or six cases like "nadir, North-up, point 20 m East should land right of centre on the middle row". A sign error shows up instantly when the dot lands on the wrong side.</li>
+  <li><strong>Name your limits.</strong> In view is not visible. Saying so up front costs nothing and sets the right expectations.</li>
+</ul>
+        </div>
+        <footer class="post__foot">
+          <div class="post__author">
+            <img src="/assets/favicon.svg" width="30" height="40" alt="" />
+            <p><strong>Hoang Anh Tuan</strong> builds drone inspection software: FastAPI and AWS pipelines, and the 3D viewers on top of them. <a href="/#contact">Say hello</a>.</p>
+          </div>
+          <nav class="pager" data-post-nav aria-label="More posts"></nav>
+        </footer>
+      </article>
+    </main>
+    <footer class="blog-foot">
+      <p class="footer"><span class="tile tile--red tile--xs">印</span>© 2026 Hoang Anh Tuan · <a href="/">tuanha.dev</a></p>
+    </footer>
+  </body>
+</html>

@@ -4,6 +4,7 @@ import { mountScene } from './scene.js';
 import { mountPetals } from './petals.js';
 import { mountPlayer } from './lofi-player.js';
 import { mountDecor } from './decor.js';
+import { mountNav } from './nav.js';
 
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -95,86 +96,17 @@ document.querySelectorAll('[data-filter]').forEach((tab) =>
 );
 
 // Highlight the nav link of the section in view.
-const links = [...document.querySelectorAll('.nav__links a')];
+const links = mountNav();
 const spy = new IntersectionObserver(
   (entries) =>
     entries.forEach((e) => {
       if (!e.isIntersecting) return;
       const id = e.target.id ? `#${e.target.id}` : '#top';
-      links.forEach((a) => a.classList.toggle('is-active', a.getAttribute('href') === id));
+      links.forEach((a) => a.classList.toggle('is-active', a.hash === id));
     }),
   { rootMargin: '-45% 0px -50% 0px' },
 );
 document.querySelectorAll('.hero, .section').forEach((el) => spy.observe(el));
-
-// Navbar: local Vietnam time sets day or night for the page (the hero scene reads
-// html[data-sky]); the clock button flips it until the next reload.
-const nav = document.querySelector('[data-nav]');
-const clock = document.querySelector('[data-clock]');
-const sky = document.querySelector('[data-sky]');
-const skyToggle = document.querySelector('[data-sky-toggle]');
-const skyLabel = document.querySelector('[data-sky-label]');
-const vnTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-let skyOverride = null;
-function tick() {
-  const time = vnTime.format(new Date());
-  const hour = Number(time.slice(0, 2));
-  const night = skyOverride ? skyOverride === 'night' : hour < 6 || hour >= 18;
-  clock.textContent = time;
-  document.documentElement.dataset.sky = night ? 'night' : 'day';
-  sky.classList.toggle('is-night', night);
-  skyLabel.textContent = night ? 'Switch to day' : 'Switch to night';
-}
-tick();
-setInterval(tick, 30_000);
-skyToggle.addEventListener('click', () => {
-  skyOverride = document.documentElement.dataset.sky === 'night' ? 'day' : 'night';
-  tick();
-});
-
-// Theme toggle: light (明) or dark (暗). An explicit choice is remembered; until then the page
-// follows the system setting.
-const themeToggle = document.querySelector('[data-theme-toggle]');
-const themeMeta = document.querySelector('meta[name="theme-color"]');
-const systemDark = matchMedia('(prefers-color-scheme: dark)');
-function applyTheme(theme) {
-  document.documentElement.dataset.theme = theme;
-  const dark = theme === 'dark';
-  themeToggle.setAttribute('aria-pressed', String(dark));
-  themeToggle.querySelector('[data-theme-glyph]').textContent = dark ? '暗' : '明';
-  themeMeta.content = dark ? '#161826' : '#fbf8f0';
-}
-applyTheme(document.documentElement.dataset.theme);
-themeToggle.addEventListener('click', () => {
-  const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-  applyTheme(theme);
-  try {
-    localStorage.setItem('theme', theme);
-  } catch {}
-});
-systemDark.addEventListener('change', (e) => {
-  let saved = null;
-  try {
-    saved = localStorage.getItem('theme');
-  } catch {}
-  if (!saved) applyTheme(e.matches ? 'dark' : 'light');
-});
-
-addEventListener('scroll', () => nav.classList.toggle('is-scrolled', scrollY > 8), { passive: true });
-
-const menu = document.querySelector('[data-menu]');
-const setMenu = (open) => {
-  nav.classList.toggle('is-open', open);
-  menu.setAttribute('aria-expanded', String(open));
-};
-menu.addEventListener('click', () => setMenu(!nav.classList.contains('is-open')));
-links.forEach((a) => a.addEventListener('click', () => setMenu(false)));
-addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && nav.classList.contains('is-open')) {
-    setMenu(false);
-    menu.focus();
-  }
-});
 
 // Welcome screen: stays until the page has loaded (at least briefly, at most a few seconds).
 const intro = document.querySelector('[data-intro]');

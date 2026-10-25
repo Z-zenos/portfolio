@@ -162,7 +162,7 @@ function questDetail(q, i, total) {
       <div class="hoanh-phi__board">
         <p class="hoanh-phi__status"><span class="vi">${i === 0 ? 'Hiện tại' : 'Đã qua'}</span>${i === 0 ? 'Active Chronicle' : 'Past Chronicle'}</p>
         <h3 class="hoanh-phi__role">${esc(q.role)}</h3>
-        <p class="hoanh-phi__company"><span class="hoanh-phi__seal" aria-hidden="true">${esc(initials(q.company))}</span>${esc(q.company)}</p>
+        <p class="hoanh-phi__company"><span class="hoanh-phi__seal" aria-hidden="true">${esc(initials(q.company))}</span>${esc(q.company)} · ${esc(q.project)}</p>
       </div>
     </header>
     <div class="altar__middle">
@@ -198,7 +198,7 @@ function experience() {
             (q, i) => `
           <button type="button" class="ledger__item" data-quest="${i}" aria-pressed="${i === 0}">
             <span class="ledger__top"><span class="ledger__tags"><span class="ico ico--play" aria-hidden="true"></span><span class="mini-tag ${i === 0 ? 'mini-tag--green' : 'mini-tag--navy'}">${esc(q.badge)}</span></span><span class="ledger__period">${esc(q.period)}</span></span>
-            <span class="ledger__company">${esc(q.company)}</span>
+            <span class="ledger__company">${esc(q.project)}</span>
             <span class="ledger__role">${esc(q.role)}</span>
           </button>`,
           )
@@ -213,7 +213,7 @@ function experience() {
         <li class="card compact__item">
           <span class="ledger__period">${esc(q.period)}</span>
           <strong>${esc(q.role)}</strong>
-          <span class="compact__company">${esc(q.company)}</span>
+          <span class="compact__company">${esc(q.company)} · ${esc(q.project)}</span>
           <p>${esc(q.summary)}</p>
         </li>`,
         )
@@ -306,7 +306,6 @@ export function renderSections() {
   document.querySelector('#work .wrap').innerHTML = work();
   document.querySelector('#contact .wrap').innerHTML = contact();
   document.title = `${profile.name} · ${profile.domain.toLowerCase()}`;
-  document.querySelector('[data-domain]').textContent = profile.domain;
 }
 
 export function renderQuest(i) {

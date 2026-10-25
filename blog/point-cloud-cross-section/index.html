@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Slicing Millions of Points in the Browser Without Jank · Hoang Anh Tuan</title>
+    <meta name="description" content="A custom octree extractor, float32 traps at large coordinates and a 6 ms frame budget." />
+    <meta name="theme-color" content="#fbf8f0" />
+    <link rel="canonical" href="https://tuanha.dev/blog/point-cloud-cross-section/" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/assets/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://tuanha.dev/blog/point-cloud-cross-section/" />
+    <meta property="og:site_name" content="tuanha.dev" />
+    <meta property="og:title" content="Slicing Millions of Points in the Browser Without Jank · Hoang Anh Tuan" />
+    <meta property="og:description" content="A custom octree extractor, float32 traps at large coordinates and a 6 ms frame budget." />
+    <meta property="og:image" content="https://tuanha.dev/assets/blog/point-cloud-cross-section/cover.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="article:published_time" content="2026-10-16" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&family=Yomogi&family=Be+Vietnam+Pro:ital,wght@0,400;0,600;1,400&display=swap"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <script>
+      document.documentElement.classList.add('js', 'intro-seen');
+      // Theme: the visitor's saved choice, otherwise the system setting. Set before first paint.
+      try {
+        const saved = localStorage.getItem('theme');
+        document.documentElement.dataset.theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      } catch {
+        document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+    </script>
+    <script type="module" src="/src/blog.js"></script>
+  </head>
+  <body class="blog" data-slug="point-cloud-cross-section">
+    <a class="skip" href="#main">Skip to content</a>
+    <canvas id="petals" aria-hidden="true"></canvas>
+    <header class="nav" data-nav></header>
+    <main id="main" tabindex="-1">
+      <article class="post">
+        <header class="post__head">
+          <a class="post__back" href="/blog/">← All field notes</a>
+          <p class="sec-head__chapter"><span class="tile tile--red">記</span>「 点群を断面で切る 」</p>
+          <h1 class="post__title">Slicing Millions of Points in the Browser Without Jank</h1>
+          <p class="post__meta"><time datetime="2026-10-16">2026-10-16</time> · 14 min read</p>
+          <ul class="tags"><li>webgl</li><li>performance</li><li>point cloud</li></ul>
+        </header>
+        <figure class="post__cover"><img src="/assets/blog/point-cloud-cross-section/cover.png" alt="" width="1200" height="675" /></figure>
+        <div class="post__body">
+<p class="post__lead">Pick A, pick B, and look sideways through the point cloud. I wanted a profile that made changes in elevation easy to inspect while leaving the 3D view responsive. The geometry fits into two dot products. The harder part was getting every matching point exactly once, keeping small distances accurate, and stopping old work when the user changed the question.</p>
+
+<h2>Why I wrote an extractor</h2>
+
+<p>The viewer already had a profile tool, so I first tried wrapping it in a clearer UI. I compared its output on a COPC point cloud with a small prototype that visited each octree node once.</p>
+
+<p>The built-in request returned the same points repeatedly. Loading a node triggered another walk through descendants already queued, and a hierarchy-step fallback made that happen at every level in this code path. Some colours were wrong too: the decoder's packed colour stride disagreed with the stride inferred from the allocated buffer. Buffer capacity is not a reliable description of its layout.</p>
+
+<p>Other datasets reproduced the duplication. That pointed to the library integration I was using, rather than one malformed file; it says nothing about every version of the library. Its coordinate output and update-loop scheduling also limited my control. I wrote an extractor with explicit traversal, precision, and cancellation rules.</p>
+
+<h2>Station and offset</h2>
+
+<p>Picture a strip of tape of width W stuck on the floor between two stakes A and B. For any point P, I want two numbers: how far along the tape it is from A (the <strong>station</strong>, the profile's horizontal axis), and how far left or right of the centre line it sits (the <strong>offset</strong>).</p>
+
+<figure>
+  <svg viewBox="0 0 600 300" width="100%" role="img" aria-labelledby="band-title">
+    <title id="band-title">A band of width W from A to B. Point P is decomposed into a station s along u and an offset t along the left normal n. Point Q lies outside the band.</title>
+    <polygon points="67.4,182 487.4,42 512.6,118 92.6,258" fill="var(--gold)" fill-opacity="0.18" stroke="var(--gold)"/>
+    <line x1="80" y1="220" x2="500" y2="80" stroke="currentColor" stroke-dasharray="6 4" stroke-opacity="0.6"/>
+    <line x1="80" y1="220" x2="136.9" y2="201" stroke="var(--navy)" stroke-width="3"/>
+    <polygon points="136.9,201 128.7,208.0 126.1,200.4" fill="var(--navy)"/>
+    <text x="128" y="223" font-size="14" fill="var(--navy)" font-style="italic">u</text>
+    <line x1="80" y1="220" x2="64.2" y2="172.6" stroke="var(--navy)" stroke-width="3"/>
+    <polygon points="64.2,172.6 71.2,180.8 63.6,183.4" fill="var(--navy)"/>
+    <text x="46" y="176" font-size="14" fill="var(--navy)" font-style="italic">n</text>
+    <circle cx="80" cy="220" r="6" fill="var(--red)"/>
+    <text x="60" y="245" font-size="16" font-weight="700" fill="currentColor">A</text>
+    <circle cx="500" cy="80" r="6" fill="var(--red)"/>
+    <text x="512" y="76" font-size="16" font-weight="700" fill="currentColor">B</text>
+    <line x1="317.3" y1="141" x2="309.4" y2="117.3" stroke="var(--green)" stroke-width="2"/>
+    <text x="318" y="124" font-size="14" fill="var(--green)" font-style="italic">t</text>
+    <text x="230" y="186" font-size="14" fill="var(--green)" font-style="italic">s</text>
+    <circle cx="309.4" cy="117.3" r="6" fill="var(--green)"/>
+    <text x="292" y="106" font-size="15" font-weight="700" fill="var(--green)">P</text>
+    <circle cx="241.4" cy="229.5" r="6" fill="none" stroke="var(--ink-soft)" stroke-width="2"/>
+    <text x="252" y="246" font-size="15" font-weight="700" fill="var(--ink-soft)">Q (outside)</text>
+    <line x1="487.4" y1="42" x2="512.6" y2="118" stroke="var(--gold)" stroke-width="2"/>
+    <text x="520" y="50" font-size="14" fill="var(--gold)">W</text>
+  </svg>
+  <figcaption>Station <em>s</em> is measured along <em>u</em> (A towards B); offset <em>t</em> along <em>n</em>, positive to the left of someone walking from A to B.</figcaption>
+</figure>
+
+<p>I work in a projected Cartesian frame with x and y in metres, not longitude and latitude. Points and node boxes must use that same frame. Both numbers come from the dot product. Let <code>u</code> be the unit vector from A to B: subtract A from B, divide by the length L. The left-hand normal is <code>u</code> rotated 90° counter-clockwise: <code>n = (−u.y, u.x)</code>. Then, with <code>AP = P − A</code>:</p>
+
+<ul>
+  <li><code>s = AP · u</code> is the shadow of AP on the A→B line, signed: negative means behind A.</li>
+  <li><code>t = AP · n</code> is the sideways distance, positive on the left.</li>
+</ul>
+
+<p>Since <code>u</code> and <code>n</code> are perpendicular unit vectors, this is just "move the origin to A, then rotate", and distances are preserved. A synthetic example: A = (0, 0), B = (30, 40), so L = 50, <code>u</code> = (0.6, 0.8), <code>n</code> = (−0.8, 0.6). For P = (20, 20): s = 12 + 16 = 28, t = −16 + 12 = −4, i.e. 28 m along and 4 m to the right. Check: √(28² + 4²) = √800 = |AP|. With W = 10, P is inside (|t| ≤ 5, 0 ≤ s ≤ 50). The point (10, 30) gives s = 30, t = +10: left of the line and outside.</p>
+
+<pre><code class="lang-ts">interface Band { ax: number; ay: number; ux: number; uy: number;
+                 nx: number; ny: number; length: number; half: number }
+
+const MIN_LENGTH = 0.05;   // A and B closer than 5 cm: no usable direction
+const END_TOL = 1e-4;      // 0.1 mm slack at the two ends (see the float32 section)
+
+function makeBand(ax: number, ay: number, bx: number, by: number, width: number): Band | null {
+  if (![ax, ay, bx, by, width].every(Number.isFinite) || width &lt;= 0) return null;
+  const dx = bx - ax, dy = by - ay;
+  const length = Math.hypot(dx, dy);          // horizontal only: z never enters
+  if (!Number.isFinite(length) || length &lt; MIN_LENGTH) return null;
+  const ux = dx / length, uy = dy / length;
+  return { ax, ay, ux, uy, nx: -uy, ny: ux, length, half: width / 2 };
+}
+
+function insideBand(b: Band, px: number, py: number): boolean {
+  const apx = px - b.ax, apy = py - b.ay;     // subtract first, keep numbers small
+  const t = apx * b.nx + apy * b.ny;
+  if (Math.abs(t) &gt; b.half) return false;
+  const s = apx * b.ux + apy * b.uy;
+  return s &gt;= -END_TOL &amp;&amp; s &lt;= b.length + END_TOL;
+}</code></pre>
+
+<p>The band is built once; each point needs a translation and two dot products. Station uses (x, y) only, so a height difference between A and B can't stretch the horizontal axis. The same <code>insideBand</code> serves fresh extraction, re-filtering when the user narrows W, and hover. Re-filtering matched a fresh extraction without new loads. That assumes the wider extraction is complete and retained; widening needs more data. Sharing the predicate keeps boundary decisions consistent.</p>
+
+<aside class="callout"><strong>Pitfall:</strong> <code>&lt;=</code> doesn't protect you from rounding. With A = (0, 0), B = (1, 6) and W = 2, a point built exactly 1 m off the axis can come out at <code>1.0000000000000004</code> and be rejected. I accepted that on the sides. The ends needed a deliberate tolerance, for a reason covered below.</aside>
+
+<h2>Skip whole nodes</h2>
+
+<p>A large point cloud is stored as an octree of nodes, each with a bounding box, fetched on demand. To avoid downloading everything, I needed to reject whole nodes by looking only at their boxes.</p>
+
+<p>Compute station and offset for the four corners of the box's footprint. Both are affine in position, so every point inside the box falls between the corner minimum and maximum. If the whole offset range is beyond W/2 on one side, or the station range ends before A or starts after B, nothing inside can be in the band. This is the separating axis test for two rectangles: the band's axes <code>u</code> and <code>n</code>, plus x and y via a cheap bounding-box check.</p>
+
+<pre><code class="lang-ts">// Broad-phase roundoff margin for this metre-scale example, not a point tolerance.
+const CULL_PAD = 1e-4;
+
+function overlapsBandBounds(b: Band, minX: number, minY: number, maxX: number, maxY: number): boolean {
+  const x0 = b.ax - b.ux * END_TOL, y0 = b.ay - b.uy * END_TOL;
+  const x1 = b.ax + b.ux * (b.length + END_TOL);
+  const y1 = b.ay + b.uy * (b.length + END_TOL);
+  const hx = Math.abs(b.nx) * b.half + CULL_PAD;
+  const hy = Math.abs(b.ny) * b.half + CULL_PAD;
+  return maxX &gt;= Math.min(x0, x1) - hx &amp;&amp; minX &lt;= Math.max(x0, x1) + hx
+      &amp;&amp; maxY &gt;= Math.min(y0, y1) - hy &amp;&amp; minY &lt;= Math.max(y0, y1) + hy;
+}
+
+function boxTouchesBand(b: Band, minX: number, minY: number, maxX: number, maxY: number): boolean {
+  if (!overlapsBandBounds(b, minX, minY, maxX, maxY)) return false;  // x and y axes
+  let sMin = Infinity, sMax = -Infinity, tMin = Infinity, tMax = -Infinity;
+  for (const [x, y] of [[minX, minY], [maxX, minY], [minX, maxY], [maxX, maxY]]) {
+    const apx = x - b.ax, apy = y - b.ay;
+    const s = apx * b.ux + apy * b.uy, t = apx * b.nx + apy * b.ny;
+    sMin = Math.min(sMin, s); sMax = Math.max(sMax, s);
+    tMin = Math.min(tMin, t); tMax = Math.max(tMax, t);
+  }
+  if (sMax &lt; -END_TOL - CULL_PAD || sMin &gt; b.length + END_TOL + CULL_PAD) return false;   // u axis
+  if (tMax &lt; -b.half - CULL_PAD || tMin &gt; b.half + CULL_PAD) return false;                // n axis
+  return true;  // possible overlap; individual points still get insideBand
+}</code></pre>
+
+<figure>
+  <svg viewBox="0 0 600 350" width="100%" role="img" aria-labelledby="cull-title">
+    <title id="cull-title">A diagonal band crosses a grid of node boxes. Sixteen boxes touch the band and are loaded; twenty-four are skipped without loading, even though every box overlaps the band's axis-aligned bounding box.</title>
+    <rect x="60" y="20" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="120" y="20" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="180" y="20" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="240" y="20" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="300" y="20" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="360" y="20" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="420" y="20" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="480" y="20" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="60" y="80" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="120" y="80" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="180" y="80" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="240" y="80" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="300" y="80" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="360" y="80" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="420" y="80" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="480" y="80" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="60" y="140" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="120" y="140" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="180" y="140" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="240" y="140" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="300" y="140" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="360" y="140" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="420" y="140" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="480" y="140" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="60" y="200" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="120" y="200" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="180" y="200" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="240" y="200" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="300" y="200" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="360" y="200" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="420" y="200" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="480" y="200" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="60" y="260" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="120" y="260" width="60" height="60" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <rect x="180" y="260" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="240" y="260" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="300" y="260" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="360" y="260" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="420" y="260" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <rect x="480" y="260" width="60" height="60" fill="none" stroke="var(--ink-soft)" stroke-opacity="0.45" stroke-dasharray="3 3"/>
+    <polygon points="81.1,274.4 501.1,34.4 518.9,65.6 98.9,305.6" fill="var(--gold)" fill-opacity="0.55" stroke="var(--gold)"/>
+    <circle cx="90" cy="290" r="5" fill="var(--red)"/>
+    <text x="70" y="300" font-size="14" font-weight="700" fill="currentColor">A</text>
+    <circle cx="510" cy="50" r="5" fill="var(--red)"/>
+    <text x="520" y="46" font-size="14" font-weight="700" fill="currentColor">B</text>
+    <rect x="60" y="330" width="14" height="14" fill="var(--green)" fill-opacity="0.18" stroke="var(--green)"/>
+    <text x="80" y="342" font-size="13" fill="currentColor">touches band: load and scan (16)</text>
+    <rect x="320" y="330" width="14" height="14" fill="none" stroke="var(--ink-soft)" stroke-dasharray="3 3"/>
+    <text x="340" y="342" font-size="13" fill="currentColor">skipped, never downloaded (24)</text>
+  </svg>
+  <figcaption>For a diagonal band, the axis-aligned bounding box overlaps every grid cell, so it rejects nothing. The station/offset axes do the real work. In a real octree, skipping a big node skips its entire subtree.</figcaption>
+</figure>
+
+<p>The test may only err in one direction. Keeping a box that misses the band wastes a download. Rejecting one that touches it silently loses data. Randomized tests looked for rejected boxes containing in-band points; passing them is useful evidence, not a proof. The cheap bounds include <code>END_TOL</code> too. The extra culling margin favours false positives; node boxes must also enclose decoded coordinates, including decoding error.</p>
+
+<p>Two traversal details came straight from the bug I was replacing. A <code>known</code> set, keyed by stable node ID and marked when queued, prevents repeated scans. Loads use only part of the viewer's shared concurrency budget, leaving room for rendering requests. In the loader I used, <code>node.load()</code> can silently decline when slots are full. I check whether loading actually started, and retry later if it did not. An empty ready queue is not completion while loads or hierarchy discovery remain pending.</p>
+
+<h2>Keep coordinates local</h2>
+
+<p>Projected map coordinates can be large. Use synthetic easting 400,000 and northing 3,900,000, both in metres, with no geographic location attached. JavaScript numbers are float64; the position buffers in this viewer use Float32. Those representations have very different spacing.</p>
+
+<figure class="sketch"><img src="/assets/blog/point-cloud-cross-section/01.png" alt="A coarse measuring rod and a fine local ruler compare the same small gap between two pebbles." width="1200" height="800" loading="lazy" /><figcaption>A nearby starting point leaves room for the small details.</figcaption></figure>
+
+<p>A normal Float32 has 24 bits of significand, including an implicit leading bit. Within the power-of-two interval containing a positive normal value <em>v</em>, consecutive floats are <code>2^(⌊log₂ v⌋ − 23)</code> apart. 3,900,000 lies between 2²¹ (2,097,152) and 2²² (4,194,304), so the exponent is 21 and the spacing is 2²¹⁻²³ = 2⁻² = <strong>0.25 m</strong>. Storing an absolute northing in this interval as Float32 snaps it to a quarter-metre grid, with a maximum round-to-nearest error of 0.125 m.</p>
+
+<table>
+  <thead><tr><th>Value</th><th>Exponent</th><th>Representable spacing</th></tr></thead>
+  <tbody>
+    <tr><td>northing 3,900,000</td><td>21</td><td>0.25 m</td></tr>
+    <tr><td>easting 400,000</td><td>18</td><td>0.03125 m</td></tr>
+    <tr><td>local value 8,000 (relative to a node corner)</td><td>12</td><td>0.00049 m (about half a millimetre)</td></tr>
+    <tr><td>northing 3,900,000 in float64</td><td>21</td><td>2⁻³¹ ≈ 0.5 nm</td></tr>
+  </tbody>
+</table>
+
+<p>For a synthetic 0.1 m band, rounding northings to that grid can change membership near its edges; orientation matters. Subtracting an origin afterwards cannot recover discarded bits. I keep the origin precise and store small offsets from the start.</p>
+
+<ul>
+  <li><strong>Extraction:</strong> the decoder stores each point as a Float32 offset from its node's box corner. I add the corner in float64, in the common coordinate frame. This preserves the local buffer's precision, not precision already lost during decoding.</li>
+  <li><strong>3D overlay:</strong> store band vertices relative to A. The renderer must combine the origin and camera transform in float64 before uploading a camera-relative transform; sending large translations separately to Float32 shaders can reintroduce the error.</li>
+  <li><strong>Picking A and B:</strong> clicks resolve against the render copy, so the decoded position can land just past the endpoint it defines. The 0.1 mm end tolerance addresses that mismatch in this implementation; it is not a universal error bound for arbitrary node sizes.</li>
+</ul>
+
+<h2>Give each frame room</h2>
+
+<p>The scanner shares the main thread with input handling, layout, and rendering work. At 60 Hz, a frame interval is about 16.7 ms. A sufficiently large uninterrupted scan blocks interaction; point count alone does not tell me how long it will take.</p>
+
+<p>So the extractor yields. It scans in chunks of 2,000 points, checks the clock after each chunk, and stops after about 6 ms, saving where it stopped for the next <code>requestAnimationFrame</code>. In an idealized example, 300 ms of CPU work takes roughly 50 slices and 0.83 s at 60 Hz, excluding loading and other overhead. That buys opportunities to render, not a frame-rate guarantee. Batch delivery and drawing also consume time; hidden tabs may pause these callbacks.</p>
+
+<figure>
+  <svg viewBox="0 0 600 170" width="100%" role="img" aria-labelledby="slice-title">
+    <title id="slice-title">Top row: one long blocking task covers several frames, so rendering stalls. Bottom row: each 16.7 ms frame holds a 6 ms scan slice followed by rendering and idle time.</title>
+    <text x="0" y="20" font-size="13" fill="currentColor">one long task</text>
+    <rect x="0" y="28" width="600" height="30" fill="var(--red)" fill-opacity="0.25" stroke="var(--red)"/>
+    <text x="300" y="48" font-size="13" text-anchor="middle" fill="currentColor">scanning… no frames painted, input waits</text>
+    <text x="0" y="92" font-size="13" fill="currentColor">time-sliced</text>
+    <g>
+      <rect x="0" y="100" width="72" height="30" fill="var(--gold)"/>
+      <rect x="72" y="100" width="48" height="30" fill="var(--navy)"/>
+      <rect x="200" y="100" width="72" height="30" fill="var(--gold)"/>
+      <rect x="272" y="100" width="48" height="30" fill="var(--navy)"/>
+      <rect x="400" y="100" width="72" height="30" fill="var(--gold)"/>
+      <rect x="472" y="100" width="48" height="30" fill="var(--navy)"/>
+    </g>
+    <line x1="200" y1="96" x2="200" y2="136" stroke="currentColor" stroke-opacity="0.5"/>
+    <line x1="400" y1="96" x2="400" y2="136" stroke="currentColor" stroke-opacity="0.5"/>
+    <text x="100" y="152" font-size="12" text-anchor="middle" fill="var(--ink-soft)">frame 1 (16.7 ms)</text>
+    <text x="300" y="152" font-size="12" text-anchor="middle" fill="var(--ink-soft)">frame 2</text>
+    <text x="500" y="152" font-size="12" text-anchor="middle" fill="var(--ink-soft)">frame 3</text>
+    <rect x="0" y="158" width="10" height="10" fill="var(--gold)"/>
+    <text x="14" y="167" font-size="11" fill="currentColor">scan ≈ 6 ms</text>
+    <rect x="100" y="158" width="10" height="10" fill="var(--navy)"/>
+    <text x="114" y="167" font-size="11" fill="currentColor">render</text>
+  </svg>
+  <figcaption>The budget is a cooperative target, not a hard limit. The clock is checked between chunks, so a slice can overshoot by a chunk of work. Batch delivery adds its own cost.</figcaption>
+</figure>
+
+<p>The scan loop below uses application-specific <code>NodeQueue</code> and <code>Batch</code> types. <code>nextReady()</code> returns only loaded, retained arrays; <code>done</code> means discovery and loading have finished and no ready nodes remain. Loading and error settlement live outside this sketch:</p>
+
+<pre><code class="lang-ts">const BUDGET_MS = 6, CHUNK = 2_000;
+let latestRun = 0;
+
+function extract(band: Band, queue: NodeQueue, onBatch: (b: Batch) =&gt; void, signal: AbortSignal) {
+  const run = ++latestRun;                       // stamped when the request is made
+  const stale = () =&gt; signal.aborted || run !== latestRun;
+  let node = queue.nextReady(), i = 0;
+  const step = () =&gt; {
+    if (stale()) return;
+    const deadline = performance.now() + BUDGET_MS;
+    if (!node) { node = queue.nextReady(); i = 0; }
+    const batch = new Batch();
+    while (node &amp;&amp; performance.now() &lt; deadline) {
+      const end = Math.min(i + CHUNK, node.count);
+      for (; i &lt; end; i++) {
+        const x = node.originX + node.localX[i];  // float64 + float32 offset
+        const y = node.originY + node.localY[i];
+        if (insideBand(band, x, y)) batch.push(node, i, x, y);
+      }
+      if (i === node.count) { node = queue.nextReady(); i = 0; }
+    }
+    if (stale()) return;
+    onBatch(batch);
+    if (!stale() &amp;&amp; (node || !queue.done)) requestAnimationFrame(step);  // the callback may have cancelled us
+  };
+  requestAnimationFrame(step);
+}</code></pre>
+
+<p>The scanner retains the actual point arrays across frames; holding a node object alone is insufficient if cache eviction clears its geometry. The queue prioritizes larger boxes so coarse coverage arrives before detail. That improves the preview, but a coarse profile cannot establish the final maximum elevation.</p>
+
+<h2>Reject stale results</h2>
+
+<p>Work spread over several frames can finish after its question has changed. Drag the width handle, and batches for the old width keep arriving and draw old heights over the preview.</p>
+
+<figure class="sketch"><img src="/assets/blog/point-cloud-cross-section/02.png" alt="Hands divert an outdated wide-band terrain sheet into a tray while keeping a fresh narrow-band sheet on the desk." width="1200" height="800" loading="lazy" /><figcaption>An old answer can arrive after the question has moved on.</figcaption></figure>
+
+<p>I give each request a revision: capture it <em>when the request is made</em>, increment it whenever relevant state changes, and compare it <em>where results land</em>. If rendering is queued separately, that consumer must check too. The sketch assumes one active profile; separate profiles need separate counters.</p>
+
+<p>Ignoring a result and cancelling the work are different jobs, so I use both:</p>
+
+<ul>
+  <li><strong>Revision counter</strong> lets the consumer reject stale output without cooperation from the producer.</li>
+  <li><strong><code>AbortSignal</code></strong> requests cancellation. The producer must check it, including after callbacks. Already-started shared loads may need to finish; aborting one profile must not cancel a load the renderer still needs.</li>
+</ul>
+
+<p>Both bugs I hit here came up in review. The width drag debounced the next extraction but didn't stop the current one, which kept pushing batches. Debounce delays new work; it doesn't stop old work. Now the revision changes and cancellation is requested immediately, before the debounce; synchronous work stops at its next check. And a hover pick waiting for the camera to settle read the <em>current</em> revision when it finally ran, stamping an old cursor position as fresh. A revision only protects you if it is captured at creation.</p>
+
+<h2>Draw without distorting</h2>
+
+<p>The chart is a 2D canvas: station on x, elevation on y, flipped because pixels count downward. The catch is scale. For a synthetic 40 m section with 4 m of relief and a 720×300 px plot area inside an 800×400 canvas, the scales are 18 px per horizontal metre and 75 px per vertical metre. "Fit" mode exaggerates the vertical by 75 / 18 ≈ 4.17×.</p>
+
+<figure class="sketch"><img src="/assets/blog/point-cloud-cross-section/03.png" alt="Two profile cards show the same hill over the same horizontal span, with the right profile stretched vertically." width="1200" height="800" loading="lazy" /><figcaption>The hill looks steeper; the measured grade stays the same.</figcaption></figure>
+
+<p>So the chart offers a fixed vertical exaggeration V×N: one vertical metre takes N times the pixels of a horizontal one. It widens one axis around the view centre to hit that ratio without cropping data, and re-applies it on every view change. An early version applied it only once, letting scroll-wheel zoom drift away from the requested ratio.</p>
+
+<p>Measurements use station and elevation, never pixels. I order endpoints by station and require a positive separation; equal stations have no finite grade. Take (10 m, 100 m) and (30 m, 102 m): Δd = 20 m, Δz = 2 m, slope = 2 / 20 = <strong>10%</strong>, angle = <code>atan2(2, 20)</code> ≈ 5.71° once converted from radians. The grade is signed rise over horizontal run, with the same value at V×1 or V×10. This is grade along the profile axis; offsets across the band are ignored. Vegetation and structures can appear here too, so interpreting it as ground slope requires ground returns.</p>
+
+<p>Drawing is budgeted too: a capped batch of new points per frame while data streams in, a capped every-k-th-point preview during zoom and pan, a deferred full redraw after the user stops, and points grouped by colour so <code>fillStyle</code> changes once per group.</p>
+
+<h2>Check with a second reader</h2>
+
+<p>"The chart looks right" is not evidence. I checked the same COPC file with a separate reader, decoded in float64, using an independently written band test. Both tests included the nominal edges; only my extractor extended the ends. Match source records rather than rounded coordinates: distinct returns can share a position. The comparison found:</p>
+
+<ul>
+  <li>Every point the independent reader found was also in my result.</li>
+  <li>The extras were A and B themselves, admitted by the end tolerance after small coordinate differences moved them across the nominal boundary.</li>
+  <li>Coordinate differences were at micrometre scale in that comparison, not evidence of micrometre survey accuracy.</li>
+  <li>Changing the viewer's point budget and orbiting the camera gave the same count, as expected for traversal independent of screen visibility.</li>
+  <li>Cancellation tests produced no subsequent callbacks. A temporary point cap stopped at the configured limit and reported <code>partial</code>.</li>
+</ul>
+
+<p>The serious bugs were on unhappy paths: a stalled load that fell out of the in-flight count (so the extractor exceeded its own load cap), callbacks after cancellation, and a completion promise that could hang if a caller's callback threw. Now stalled loads stay counted, cancellation is rechecked after callbacks, and each terminal path settles as <code>complete</code>, <code>partial</code>, <code>cancelled</code>, or <code>error</code>.</p>
+
+<h2>Takeaways</h2>
+
+<ul>
+  <li><strong>Spike on real data before planning.</strong> A comparison turned "wrap the built-in tool" into "write an extractor"; other datasets confirmed the problem in that integration.</li>
+  <li><strong>One invariant, one place.</strong> One <code>insideBand</code> for extraction, re-filtering, and hover. Vertical exaggeration applied wherever the view is computed, not in one event handler.</li>
+  <li><strong>Subtract before you compute.</strong> Large coordinates go through float64 and a nearby origin; Float32 only ever holds small offsets.</li>
+  <li><strong>Long work yields.</strong> A small per-frame budget, saved progress, and a held reference to the data being scanned.</li>
+  <li><strong>Every async result answers an old question.</strong> Stamp requests at creation, invalidate old work immediately, and check again after every callback.</li>
+  <li><strong>Cross-check with a second implementation</strong>, and write down what you haven't measured yet.</li>
+</ul>
+        </div>
+        <footer class="post__foot">
+          <div class="post__author">
+            <img src="/assets/favicon.svg" width="30" height="40" alt="" />
+            <p><strong>Hoang Anh Tuan</strong> builds drone inspection software: FastAPI and AWS pipelines, and the 3D viewers on top of them. <a href="/#contact">Say hello</a>.</p>
+          </div>
+          <nav class="pager" data-post-nav aria-label="More posts"></nav>
+        </footer>
+      </article>
+    </main>
+    <footer class="blog-foot">
+      <p class="footer"><span class="tile tile--red tile--xs">印</span>© 2026 Hoang Anh Tuan · <a href="/">tuanha.dev</a></p>
+    </footer>
+  </body>
+</html>
