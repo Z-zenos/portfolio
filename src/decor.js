@@ -34,7 +34,7 @@ const DECOR = [
   ['.hero', prop('cloud-long', 'cloud-a') + prop('cloud-small', 'cloud-b') + prop('crane', 'crane')],
 
   ['#about', tategaki('一期一会', 'ichi-go ichi-e · treasure every meeting', 'left') + prop('chime', 'chime')],
-  ['.passport', note({ text: 'roll the dice!', ja: '振ってみて', arrow: 'diag', flip: 'flip-x', pos: 'roll' }) + hanko('認可', 'passport')],
+  ['.rireki', note({ text: 'roll the dice!', ja: '振ってみて', arrow: 'diag', flip: 'flip-x', pos: 'roll' }) + hanko('認可', 'passport')],
   ['.expertise', prop('bonsai', 'bonsai')],
 
   ['#exp', tategaki('七転び八起き', 'fall seven times, rise eight', 'right')],

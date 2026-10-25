@@ -921,113 +921,215 @@ main:focus {
   box-shadow: var(--shadow-sm);
 }
 
-.panel {
+/* ---------- about: rirekisho ---------- */
+
+/* About as a Japanese résumé form (履歴書): ruled cells with kanji field labels, a photo box,
+   a seal box beside the name and lined paper for the self-introduction. */
+.rireki {
   background: var(--white);
   border: 3px solid var(--ink);
   box-shadow: 6px 6px 0 var(--ink);
 }
 
-.panel__bar {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 10px 18px;
-  color: #fff;
-  background: var(--navy);
-}
-
-.panel__bar--tight {
-  justify-content: space-between;
-  padding: 8px 14px;
-}
-
-.panel__tag {
-  padding: 1px 8px;
-  font-size: 11px;
-  color: var(--ink);
-  background: var(--gold);
-}
-
-.panel__title {
+.rireki small {
+  margin-left: 8px;
   font-family: var(--font-label);
-  font-weight: 400;
-  font-size: 12px;
-  letter-spacing: 0.08em;
+  font-size: 9px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: var(--ink-soft);
 }
 
-.panel__level {
-  display: inline-flex;
-  align-items: center;
-  margin-left: auto;
-  font-family: var(--font-label);
-  font-weight: 400;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  color: var(--gold);
+.rireki__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 16px 24px 12px;
+  border-bottom: 3px double var(--ink);
 }
 
-.panel__level .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+.rireki__title {
+  font-size: 30px;
+  letter-spacing: 0.5em;
+  line-height: 1;
 }
 
-/* ---------- about: passport ---------- */
+.rireki__date {
+  font-size: 15px;
+  color: var(--ink-soft);
+}
 
-.passport__body {
+.rireki__body {
   display: grid;
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: 380px 1fr;
 }
 
-.passport__side {
+.rireki__side {
   display: grid;
-  gap: 18px;
+  gap: 14px;
   align-content: start;
   padding: 18px 20px 24px;
   background: var(--panel);
-  border-right: 3px solid var(--ink);
+  border-right: 2px solid var(--ink);
+}
+
+.rireki__id {
+  display: grid;
+  grid-template-columns: 1fr 92px;
+  gap: 12px;
+  align-items: start;
+}
+
+.rireki__fields {
+  margin: 0;
+  background: var(--white);
+  border: 2px solid var(--ink);
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  border-bottom: 1px solid rgba(42, 38, 34, 0.45);
+}
+
+.field:last-child {
+  border-bottom: 0;
+}
+
+.field dt {
+  display: grid;
+  align-content: center;
+  padding: 4px 6px;
+  font-size: 12px;
+  line-height: 1.2;
+  background: var(--panel);
+  border-right: 1px dashed rgba(42, 38, 34, 0.45);
+}
+
+.field dt small {
+  margin: 0;
+  font-size: 7px;
+}
+
+.field dd {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 4px 8px;
+  font-size: 14px;
+}
+
+.field__kana {
+  font-size: 12px !important;
+  color: var(--pink);
+}
+
+.field--name dd {
+  justify-content: space-between;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.field__seal {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+  color: var(--red);
+  border: 1px dashed var(--red);
+  border-radius: 50%;
+}
+
+.rireki__photo {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 8px 6px 6px;
+  background: var(--white);
+  border: 2px dashed var(--ink-soft);
+}
+
+.rireki__photo img {
+  width: 76px;
+  height: 92px;
+  object-fit: contain;
+  background: linear-gradient(#dbe6ee, #c6d6e2);
+  border: 2px solid var(--ink);
+}
+
+.rireki__photo figcaption {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.rireki__label {
+  display: flex;
+  align-items: baseline;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.rireki__label a {
+  margin-left: auto;
+  font-family: var(--font-label);
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--red);
+  text-decoration: none;
 }
 
 .stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  margin-top: -6px;
+  background: var(--white);
+  border: 2px solid var(--ink);
 }
 
 .stat {
-  position: relative;
-  padding: 8px 10px;
-  background: var(--white);
-  border: 2px solid var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
+  --c: var(--red);
+  padding: 7px 10px;
+  border-right: 1px solid rgba(42, 38, 34, 0.45);
+  border-bottom: 1px solid rgba(42, 38, 34, 0.45);
 }
 
-.stat::after {
-  content: '';
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 5px;
-  height: 5px;
-  background: var(--c);
+.stat:nth-child(2n) {
+  border-right: 0;
 }
 
-.stat--red { --c: var(--red); }
+.stat:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
 .stat--green { --c: var(--green); }
 .stat--gold { --c: var(--gold); }
 .stat--navy { --c: var(--navy); }
 
 .stat__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-label);
-  font-weight: 400;
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  color: var(--c);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
+}
+
+.stat__ja {
+  padding: 0 4px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0;
+  color: #fff;
+  background: var(--c);
 }
 
 .stat__value {
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1.4;
 }
 
@@ -1070,80 +1172,74 @@ main:focus {
   text-transform: uppercase;
 }
 
+/* Vitals as a row of rating boxes, filled like a marked score sheet. */
 .vital__bar {
-  height: 7px;
-  padding: 1px;
+  height: 12px;
+  background: repeating-linear-gradient(90deg, transparent 0 8px, rgba(42, 38, 34, 0.35) 8px 10px);
   border: 1px solid var(--ink);
 }
 
 .fill {
+  --c: var(--green);
   display: block;
   height: 100%;
+  background: repeating-linear-gradient(90deg, var(--c) 0 8px, transparent 8px 10px);
   transition: width 0.4s steps(6);
 }
 
-.fill--green { background: var(--green); }
-.fill--navy { background: var(--navy); }
-.fill--red { background: var(--red); }
+.fill--navy { --c: var(--navy); }
+.fill--red { --c: var(--red); }
 
-.passport__story {
+.rireki__main {
   display: grid;
-  gap: 18px;
-  align-content: start;
-  padding: 20px 24px 24px;
+  grid-template-rows: auto auto 1fr;
 }
 
-.story__head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 10px;
-  border-bottom: 2px solid var(--ink);
+.rireki__box {
+  display: grid;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-bottom: 1px solid rgba(42, 38, 34, 0.45);
 }
 
-.story__p {
+.rireki__box:last-child {
+  border-bottom: 0;
+}
+
+/* Lined writing paper: each line of text sits on a rule. */
+.rireki__ruled {
   font-size: 16px;
-  line-height: 1.75;
+  line-height: 30px;
+  background: repeating-linear-gradient(transparent 0 29px, rgba(44, 62, 94, 0.22) 29px 30px);
 }
 
-.featured {
-  padding: 12px 16px 14px;
-  background: var(--panel);
-  border: 2px solid var(--red);
-  box-shadow: 0 3px 0 var(--red);
+.rireki__ruled p + p {
+  margin-top: 30px;
 }
 
-.featured__head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
+.rireki__box--featured {
+  background: linear-gradient(90deg, var(--red) 0 4px, transparent 4px), var(--panel);
+}
+
+.rireki__featured-name {
   font-family: var(--font-label);
-  font-size: 12px;
-  letter-spacing: 0.1em;
-}
-
-.featured__head a {
-  margin-left: auto;
-  font-size: 10px;
-  font-weight: 400;
-  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.12em;
   color: var(--red);
-  text-decoration: none;
 }
 
-.quote {
+/* The wishes box fills the rest of the column as more lined paper. */
+.rireki__box:last-child {
+  align-content: start;
+  background: repeating-linear-gradient(transparent 0 29px, rgba(44, 62, 94, 0.22) 29px 30px) 0 36px / 100% calc(100% - 36px) no-repeat content-box;
+}
+
+.rireki__motto {
   margin: 0;
-  padding: 12px 16px 12px 22px;
-  font-style: italic;
-  background: var(--panel);
-  border-left: 4px solid var(--green);
-  box-shadow: inset 0 0 0 1px rgba(62, 142, 65, 0.4);
-}
-
-.quote::before {
-  content: '“ ';
-  color: var(--green);
+  font-family: 'Yomogi', var(--font-body);
+  font-size: 18px;
+  line-height: 30px;
+  color: var(--navy);
 }
 
 /* ---------- about: expertise ---------- */
@@ -2361,14 +2457,14 @@ main:focus {
     margin-left: -60%;
   }
 
-  .passport__body,
+  .rireki__body,
   .quests {
     grid-template-columns: 1fr;
   }
 
-  .passport__side {
+  .rireki__side {
     border-right: 0;
-    border-bottom: 3px solid var(--ink);
+    border-bottom: 2px solid var(--ink);
   }
 
   .ema-rack {
@@ -2462,8 +2558,32 @@ main:focus {
     font-size: 8px;
   }
 
-  .ticket .hanko--project {
+  .ticket .hanko--project,
+  .rireki .hanko--passport {
     display: none;
+  }
+
+  .rireki__top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 14px 16px 10px;
+  }
+
+  .rireki__title {
+    font-size: 24px;
+    letter-spacing: 0.3em;
+    white-space: nowrap;
+  }
+
+  .rireki__title small {
+    display: block;
+    margin: 6px 0 0;
+  }
+
+  .rireki__side,
+  .rireki__box {
+    padding-inline: 16px;
   }
 
   .altar__middle {
@@ -2501,14 +2621,6 @@ main:focus {
     order: -1;
     justify-content: center;
     width: 100%;
-  }
-
-  .panel__title {
-    font-size: 10px;
-  }
-
-  .panel__tag {
-    display: none;
   }
 
   .player {
@@ -2573,15 +2685,8 @@ main:focus {
   display: inline-block;
 }
 
-.panel__bar--tight .panel__title,
-.panel__bar--tight .panel__level {
-  font-size: 11px;
-  white-space: nowrap;
-}
-
 .mini-tag,
-.btn--red,
-.featured__head strong {
+.btn--red {
   font-weight: 700;
 }
 
@@ -2590,15 +2695,6 @@ main:focus {
 }
 
 @media (max-width: 600px) {
-
-  .panel__bar {
-    flex-wrap: wrap;
-    gap: 6px 14px;
-  }
-
-  .panel__level {
-    margin-left: 0;
-  }
 
   /* Long labels wrap inside the card, and the footer clears the collapsed player. */
   .transmit .btn {
@@ -2721,7 +2817,7 @@ main:focus {
   opacity: 0;
 }
 
-.passport,
+.rireki,
 .ledger,
 .filters,
 .ticket,
@@ -2779,8 +2875,8 @@ main:focus {
 }
 
 .hanko--passport {
-  right: 38px;
-  bottom: 30px;
+  right: 34px;
+  bottom: 22px;
   writing-mode: vertical-rl;
   font-size: 24px;
 }

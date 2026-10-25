@@ -47,15 +47,14 @@ export const profile = {
 
   about: {
     subtitle: 'Software engineer · builder of calm systems · Vietnam',
-    passportLabel: '旅 • 旅人手帳',
-    passportTitle: "Traveler's Passport · Engineer Record",
     level: 'LVL 99 · ACTIVE',
+    photo: 'assets/player/cat.png', // EDIT: your photo (3:4 works best)
     stats: [
       // EDIT
-      { label: 'EXP', value: '5+ YRS', note: 'Production Systems', color: 'red' },
-      { label: 'SHIPPED', value: '20+', note: 'Features Launched', color: 'green' },
-      { label: 'SCALE', value: '1M+', note: 'Requests / Day', color: 'gold' },
-      { label: 'CRAFT', value: '34', note: 'Pixel Provinces', color: 'navy' },
+      { label: 'EXP', ja: '経験', value: '5+ YRS', note: 'Production Systems', color: 'red' },
+      { label: 'SHIPPED', ja: '実績', value: '20+', note: 'Features Launched', color: 'green' },
+      { label: 'SCALE', ja: '規模', value: '1M+', note: 'Requests / Day', color: 'gold' },
+      { label: 'CRAFT', ja: '創作', value: '34', note: 'Pixel Provinces', color: 'navy' },
     ],
     vitals: [
       { label: 'Clean Code', value: 97, color: 'green' },

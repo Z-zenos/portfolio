@@ -10,6 +10,12 @@ const brand = (path) => `<img class="pxi pxi--brand" src="${devicon(path)}" alt=
 const KANJI_NUMBERS = ['壱', '弐', '参', '肆', '伍', '陸'];
 // Corner characters on the mahjong skill tiles: server (saba, Japanese slang), screen, storehouse, cloud.
 const SUITS = { backend: '鯖', frontend: '画', data: '蔵', devops: '雲' };
+// Today's date written the way a rirekisho is dated, e.g. 2026年10月26日.
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+};
+
 const GITHUB = brand('github/github-original');
 const LINKEDIN = brand('linkedin/linkedin-original');
 
@@ -48,20 +54,29 @@ function about() {
   const a = profile.about;
   return `
     ${sectionHead({ glyph: '伝', color: 'red', chapter: '第一章 • 自己紹介', title: 'Player Profile &amp; Origin', subtitle: esc(a.subtitle) })}
-    <div class="passport panel">
-      <div class="panel__bar">
-        <span class="panel__tag">${esc(a.passportLabel)}</span>
-        <span class="panel__title">${esc(a.passportTitle)}</span>
-        <span class="panel__level"><span class="dot dot--green"></span>${esc(a.level)}</span>
-      </div>
-      <div class="passport__body">
-        <div class="passport__side">
+    <div class="rireki">
+      <header class="rireki__top">
+        <h3 class="rireki__title">履 歴 書<small>Résumé · Engineer Record</small></h3>
+        <p class="rireki__date">${today()}現在<small>as of today</small></p>
+      </header>
+      <div class="rireki__body">
+        <div class="rireki__side">
+          <div class="rireki__id">
+            <dl class="rireki__fields">
+              <div class="field"><dt>ふりがな</dt><dd class="field__kana">${esc(profile.nameJa)}</dd></div>
+              <div class="field field--name"><dt>氏名<small>Name</small></dt><dd>${esc(profile.name)}<span class="field__seal" aria-hidden="true">印</span></dd></div>
+              <div class="field"><dt>現住所<small>Address</small></dt><dd>${esc(profile.location)}</dd></div>
+              <div class="field"><dt>状態<small>Status</small></dt><dd><span class="dot dot--green"></span>${esc(a.level)}</dd></div>
+            </dl>
+            <figure class="rireki__photo"><img src="${esc(a.photo)}" alt="" /><figcaption>写真</figcaption></figure>
+          </div>
+          <p class="rireki__label">能力<small>Stats</small></p>
           <div class="stats">
             ${a.stats
               .map(
                 (s) => `
               <div class="stat stat--${s.color}">
-                <p class="stat__label">[${esc(s.label)}]</p>
+                <p class="stat__label"><span class="stat__ja">${esc(s.ja)}</span>${esc(s.label)}</p>
                 <p class="stat__value">${esc(s.value)}</p>
                 <p class="stat__note">${esc(s.note)}</p>
               </div>`,
@@ -80,17 +95,23 @@ function about() {
               )
               .join('')}
           </div>
-          <p class="label">Primary Arts · 主要技術</p>
+          <p class="rireki__label">免許・資格<small>Primary Arts</small></p>
           <ul class="badges">${a.skills.map(skillBadge).join('')}</ul>
         </div>
-        <div class="passport__story">
-          <div class="story__head"><p class="label"><span class="sq sq--red"></span>Chronicles of Craft · 冒険譚</p><span class="mini-tag">Chapter 1</span></div>
-          ${a.story.map((p) => `<p class="story__p">${esc(p)}</p>`).join('')}
-          <div class="featured">
-            <p class="featured__head"><span class="mini-tag mini-tag--red">Featured Quest</span><strong>${esc(a.featured.name)}</strong><a href="${esc(a.featured.url)}">Launch ↗</a></p>
+        <div class="rireki__main">
+          <section class="rireki__box">
+            <p class="rireki__label">自己PR<small>Chronicles of Craft</small></p>
+            <div class="rireki__ruled">${a.story.map((p) => `<p>${esc(p)}</p>`).join('')}</div>
+          </section>
+          <section class="rireki__box rireki__box--featured">
+            <p class="rireki__label">特記事項<small>Featured Quest</small><a href="${esc(a.featured.url)}">Launch ↗</a></p>
+            <p class="rireki__featured-name">${esc(a.featured.name)}</p>
             <p>${esc(a.featured.text)}</p>
-          </div>
-          <blockquote class="quote">${esc(a.quote)}</blockquote>
+          </section>
+          <section class="rireki__box">
+            <p class="rireki__label">本人希望記入欄<small>Motto</small></p>
+            <blockquote class="rireki__motto">${esc(a.quote)}</blockquote>
+          </section>
         </div>
       </div>
     </div>
