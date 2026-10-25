@@ -1,0 +1,12 @@
+// Cloudflare Workers static-assets deploy for tuanha.dev. No build step: the repo root is the site.
+// Files listed in .assetsignore (git data, raw art sources, docs, this config) are not uploaded.
+{
+  "$schema": "https://unpkg.com/wrangler@4.147.0/config-schema.json",
+  "name": "portfolio",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": ".",
+    // /blog/<slug>/ serves blog/<slug>/index.html.
+    "html_handling": "auto-trailing-slash"
+  }
+}
