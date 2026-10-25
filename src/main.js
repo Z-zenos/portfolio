@@ -3,10 +3,12 @@ import { renderSections, renderQuest } from './sections.js';
 import { mountScene } from './scene.js';
 import { mountPetals } from './petals.js';
 import { mountPlayer } from './lofi-player.js';
+import { mountDecor } from './decor.js';
 
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 renderSections();
+mountDecor();
 mountScene(document.querySelector('#scene'), { reducedMotion });
 if (!reducedMotion) mountPetals(document.querySelector('#petals'));
 mountPlayer(document.querySelector('#player'));

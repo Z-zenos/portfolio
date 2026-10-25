@@ -4,6 +4,7 @@
 const TRACKS = [
   {
     title: 'Hoi An Dusk',
+    titleJa: '会安の夕暮れ',
     bpm: 72,
     key: 57,
     chords: [[0, 3, 7, 10], [-4, 0, 3, 7], [3, 7, 10, 14], [-2, 2, 5, 7]],
@@ -13,6 +14,7 @@ const TRACKS = [
   },
   {
     title: 'Saigon Rain',
+    titleJa: 'サイゴンの雨',
     bpm: 66,
     key: 55,
     chords: [[0, 4, 7, 11], [-3, 0, 4, 7], [-7, -3, 0, 4], [-5, -1, 2, 5]],
@@ -22,6 +24,7 @@ const TRACKS = [
   },
   {
     title: 'Old Quarter 3AM',
+    titleJa: '旧市街・午前三時',
     bpm: 78,
     key: 53,
     chords: [[0, 3, 7, 10], [5, 8, 12, 15], [-2, 2, 5, 9], [3, 7, 10, 14]],
@@ -67,7 +70,11 @@ class LofiEngine {
     const tone = ctx.createBiquadFilter();
     tone.type = 'lowpass';
     tone.frequency.value = 4200;
-    this.master.connect(tone).connect(ctx.destination);
+    this.analyser = ctx.createAnalyser();
+    this.analyser.fftSize = 64;
+    this.analyser.smoothingTimeConstant = 0.75;
+    this.levels = new Uint8Array(this.analyser.frequencyBinCount);
+    this.master.connect(tone).connect(this.analyser).connect(ctx.destination);
     this.bus = ctx.createGain();
     this.bus.connect(this.master);
     this.noise = noiseBuffer(ctx, 1);
@@ -110,9 +117,16 @@ class LofiEngine {
     this.ctx?.suspend();
   }
 
-  next() {
-    this.trackIndex = (this.trackIndex + 1) % TRACKS.length;
+  skip(direction) {
+    this.trackIndex = (this.trackIndex + direction + TRACKS.length) % TRACKS.length;
     if (this.playing) this.loadTrack();
+  }
+
+  // Frequency bins (0-255) for the visualizer, or null before audio starts.
+  getLevels() {
+    if (!this.analyser || !this.playing) return null;
+    this.analyser.getByteFrequencyData(this.levels);
+    return this.levels;
   }
 
   setVolume(level) {
@@ -261,35 +275,76 @@ class LofiEngine {
 
 export function mountPlayer(root) {
   const engine = new LofiEngine();
-  const status = root.querySelector('[data-status]');
-  const title = root.querySelector('[data-title]');
-  const play = root.querySelector('[data-play]');
-  const next = root.querySelector('[data-next]');
+  const q = (sel) => root.querySelector(sel);
+  const status = q('[data-status]');
+  const title = q('[data-title]');
+  const titleJa = q('[data-title-ja]');
+  const play = q('[data-play]');
+  const dots = q('[data-dots]');
+  const viz = q('[data-viz]');
   const volumeButtons = root.querySelectorAll('[data-volume]');
+  const vg = viz.getContext('2d');
+  const BARS = 14;
+  let raf = 0;
+
+  dots.innerHTML = TRACKS.map(() => '<i></i>').join('');
 
   function render() {
     root.classList.toggle('is-playing', engine.playing);
     status.textContent = engine.playing ? 'LIVE' : 'PAUSED';
     title.textContent = engine.track.title;
-    play.textContent = engine.playing ? '❚❚ PAUSE' : '▶ PLAY';
+    titleJa.textContent = engine.track.titleJa;
+    play.innerHTML = engine.playing ? '<span class="pi pi--pause"></span>PAUSE' : '<span class="pi pi--play"></span>PLAY';
     play.setAttribute('aria-pressed', String(engine.playing));
+    [...dots.children].forEach((d, i) => d.classList.toggle('is-on', i === engine.trackIndex));
     volumeButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.volume === engine.volume)));
+    q('.vol').dataset.level = engine.volume;
+  }
+
+  // Pixel bar visualizer fed by the real audio; idles as a low flat line when paused.
+  function drawViz() {
+    const levels = engine.getLevels();
+    const { width: w, height: h } = viz;
+    vg.clearRect(0, 0, w, h);
+    const bw = Math.floor(w / BARS);
+    for (let i = 0; i < BARS; i++) {
+      const v = levels ? Math.min(1, (levels[1 + i] / 255) * 1.35) : 0;
+      const bh = Math.max(1, Math.round(v * h));
+      for (let y = 0; y < bh; y++) {
+        vg.fillStyle = y > h * 0.7 ? '#e0362c' : y > h * 0.4 ? '#f0a531' : '#3e8e41';
+        vg.fillRect(i * bw, h - 1 - y, bw - 1, 1);
+      }
+    }
+    raf = engine.playing ? requestAnimationFrame(drawViz) : 0;
   }
 
   play.addEventListener('click', () => {
     if (engine.playing) engine.stop();
     else engine.start();
     render();
+    if (engine.playing && !raf) drawViz();
   });
-  next.addEventListener('click', () => {
-    engine.next();
-    render();
-  });
+  root.querySelectorAll('[data-skip]').forEach((b) =>
+    b.addEventListener('click', () => {
+      engine.skip(Number(b.dataset.skip));
+      render();
+    }),
+  );
   volumeButtons.forEach((b) =>
     b.addEventListener('click', () => {
       engine.setVolume(b.dataset.volume);
       render();
     }),
   );
+  q('[data-minimize]').addEventListener('click', () => {
+    const mini = root.classList.toggle('is-mini');
+    q('[data-minimize]').setAttribute('aria-expanded', String(!mini));
+  });
+  // Small screens start collapsed so the player does not cover the page.
+  if (matchMedia('(max-width: 600px)').matches) {
+    root.classList.add('is-mini');
+    q('[data-minimize]').setAttribute('aria-expanded', 'false');
+  }
   render();
+  drawViz();
 }

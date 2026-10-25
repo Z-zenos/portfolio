@@ -3,6 +3,10 @@
 
 const ART = 'assets/hero.png';
 const WATER_RATIO = 0.3;
+// Extra ground added to the left of the art so the scene spreads under the hero text
+// and fades out instead of ending in a hard edge.
+const SPREAD = 0.6;
+const PAVING_ROWS = 6;
 
 const PETAL_COLORS = ['#fbcad7', '#f29bb3', '#e8789a', '#f7b3c6'];
 
@@ -46,10 +50,47 @@ function findBlossoms(img) {
   return blossoms;
 }
 
-function makeGlow(w, h) {
+// Continue the art's stone paving to the left and dress it with grass, pebbles and petals.
+function buildBase(img, pad) {
+  const w = img.width + pad;
+  const h = img.height;
+  const base = makeCanvas(w, h);
+  const g = base.getContext('2d');
+  const tileX = Math.round(img.width * 0.45);
+  const tileW = 48;
+  for (let x = pad - tileW; x > -tileW; x -= tileW) {
+    g.drawImage(img, tileX, h - PAVING_ROWS, tileW, PAVING_ROWS, x, h - PAVING_ROWS, tileW, PAVING_ROWS);
+  }
+  let seed = 11;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const top = h - PAVING_ROWS;
+  for (let i = 0; i < pad / 3; i++) {
+    const x = Math.floor(rand() * pad);
+    const kind = rand();
+    if (kind < 0.45) {
+      const tall = 2 + Math.floor(rand() * 3);
+      g.fillStyle = ['#3f7a3a', '#5a9a3e', '#7cb24a'][Math.floor(rand() * 3)];
+      g.fillRect(x, top - tall, 1, tall);
+      g.fillRect(x + 1, top - tall + 1, 1, tall - 1);
+    } else if (kind < 0.8) {
+      g.fillStyle = ['#f29bb3', '#fbcad7', '#e8789a'][Math.floor(rand() * 3)];
+      g.fillRect(x, top - 1, 2, 1);
+    } else {
+      g.fillStyle = '#9a948a';
+      g.fillRect(x, top - 2, 3, 2);
+      g.fillStyle = '#6f6a62';
+      g.fillRect(x, top - 1, 3, 1);
+    }
+  }
+  g.drawImage(img, pad, 0);
+  return base;
+}
+
+function makeGlow(w, h, offset) {
   const glow = makeCanvas(w, h);
   const gg = glow.getContext('2d');
-  for (const [x, y, r] of LIGHTS) {
+  for (const [lx, y, r] of LIGHTS) {
+    const x = lx + offset;
     const grad = gg.createRadialGradient(x, y, 0, x, y, r);
     grad.addColorStop(0, 'rgba(255,190,90,0.55)');
     grad.addColorStop(1, 'rgba(255,190,90,0)');
@@ -61,7 +102,8 @@ function makeGlow(w, h) {
 
 export async function mountScene(canvas, { reducedMotion = false } = {}) {
   const img = await loadImage(ART);
-  const W = img.width;
+  const PAD = Math.round(img.width * SPREAD);
+  const W = img.width + PAD;
   const GROUND = img.height;
   const H = GROUND + Math.round(GROUND * WATER_RATIO);
   canvas.width = W;
@@ -69,8 +111,9 @@ export async function mountScene(canvas, { reducedMotion = false } = {}) {
   const g = canvas.getContext('2d');
   const frame = makeCanvas(W, GROUND);
   const fg = frame.getContext('2d');
-  const blossoms = findBlossoms(img);
-  const glow = makeGlow(W, GROUND);
+  const blossoms = findBlossoms(img).map(([x, y]) => [x + PAD, y]);
+  const glow = makeGlow(W, GROUND, PAD);
+  const base = buildBase(img, PAD);
 
   const spawn = (p = {}) => {
     const [x, y] = blossoms.length ? blossoms[Math.floor(Math.random() * blossoms.length)] : [W * 0.3, GROUND * 0.3];
@@ -100,7 +143,7 @@ export async function mountScene(canvas, { reducedMotion = false } = {}) {
     const t = now / 1000;
 
     fg.clearRect(0, 0, W, GROUND);
-    fg.drawImage(img, 0, 0);
+    fg.drawImage(base, 0, 0);
     fg.globalCompositeOperation = 'lighter';
     fg.globalAlpha = 0.75 + Math.sin(t * 2.2) * 0.15 + Math.sin(t * 7.3) * 0.05;
     fg.drawImage(glow, 0, 0);

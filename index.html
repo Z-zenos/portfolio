@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&family=Yomogi&display=swap"
     />
     <link rel="stylesheet" href="styles.css" />
     <script>document.documentElement.classList.add('js');</script>
@@ -40,7 +40,7 @@
 
       <div class="divider divider--red-green" aria-hidden="true"></div>
 
-      <section id="about" class="section">
+      <section id="about" class="section" data-kanji="伝">
         <img class="deco deco--bridge" src="assets/bridge.png" alt="" aria-hidden="true" />
         <img class="deco deco--food" src="assets/food.png" alt="" aria-hidden="true" />
         <div class="wrap"></div>
@@ -48,43 +48,56 @@
 
       <div class="divider divider--navy-gold" aria-hidden="true"></div>
 
-      <section id="exp" class="section">
+      <section id="exp" class="section" data-kanji="歴">
         <div class="wrap"></div>
       </section>
 
       <div class="divider divider--red-green" aria-hidden="true"></div>
 
-      <section id="work" class="section">
+      <section id="work" class="section" data-kanji="術">
         <img class="deco deco--street" src="assets/street.png" alt="" aria-hidden="true" />
         <div class="wrap"></div>
       </section>
 
       <div class="divider divider--red-navy" aria-hidden="true"></div>
 
-      <section id="contact" class="section section--contact">
+      <section id="contact" class="section section--contact" data-kanji="結">
         <img class="deco deco--tree" src="assets/flametree.png" alt="" aria-hidden="true" />
         <div class="wrap"></div>
       </section>
     </main>
 
     <aside id="player" class="player" aria-label="Lo-fi music player">
-      <div class="player__icons" aria-hidden="true">
-        <span class="eq"><i></i><i></i><i></i><i></i></span>
-        <span class="disc"></span>
+      <span class="player__tape" aria-hidden="true"></span>
+      <div class="player__bar">
+        <span class="player__brand"><span class="player__radio">ラジオ</span>Vietnamese Lo-fi</span>
+        <span class="player__live"><span class="player__led"></span><span data-status>PAUSED</span></span>
+        <button type="button" class="player__min" data-minimize aria-expanded="true" aria-label="Minimize player"></button>
       </div>
-      <div class="player__info">
-        <p class="player__status"><span class="sq sq--green"></span>VIETNAMESE LO-FI · <span data-status>PAUSED</span></p>
-        <p class="player__title">♫ <span data-title>Hoi An Dusk</span></p>
-        <div class="player__volume" role="group" aria-label="Volume">
-          <span>VOL:</span>
-          <button type="button" data-volume="low">LOW</button>
-          <button type="button" data-volume="med">MED</button>
-          <button type="button" data-volume="high">HIGH</button>
+      <div class="player__body">
+        <div class="player__art" aria-hidden="true">
+          <img class="player__album" src="assets/player/album.png" alt="" />
+          <img class="player__cat" src="assets/player/cat.png" alt="" />
+        </div>
+        <div class="player__main">
+          <p class="player__title" data-title>Hoi An Dusk</p>
+          <p class="player__ja" data-title-ja>会安の夕暮れ</p>
+          <canvas class="player__viz" data-viz width="98" height="16" aria-hidden="true"></canvas>
+          <div class="player__controls">
+            <button type="button" class="pbtn" data-skip="-1" aria-label="Previous track"><span class="pi pi--prev"></span></button>
+            <button type="button" class="pbtn pbtn--play" data-play>PLAY</button>
+            <button type="button" class="pbtn" data-skip="1" aria-label="Next track"><span class="pi pi--next"></span></button>
+          </div>
         </div>
       </div>
-      <div class="player__controls">
-        <button type="button" class="btn btn--red btn--sm" data-play>PLAY</button>
-        <button type="button" class="btn btn--gold btn--sm" data-next aria-label="Next track">⏭</button>
+      <div class="player__foot">
+        <div class="vol" role="group" aria-label="Volume">
+          <span class="vol__label">VOL</span>
+          <button type="button" data-volume="low" aria-label="Low volume"></button>
+          <button type="button" data-volume="med" aria-label="Medium volume"></button>
+          <button type="button" data-volume="high" aria-label="High volume"></button>
+        </div>
+        <span class="player__dots" data-dots aria-hidden="true"></span>
       </div>
     </aside>
   </body>

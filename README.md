@@ -24,8 +24,10 @@ stats, story, expertise, quests (experience), skills, projects and links.
 - `src/sections.js`: renders each section from the content
 - `src/main.js`: wiring (typewriter, quest log, skill filters, vitals roll, nav highlight)
 - `src/scene.js`: hero effects on top of `assets/hero.png`
-- `src/lofi-player.js`: generative lo-fi engine and player UI
+- `src/lofi-player.js`: generative lo-fi engine and the radio player UI (prev/next, real audio visualizer, volume, minimize)
+- `src/decor.js`: handwritten notes, hanko stamps, tategaki phrases and pixel props
 - `src/petals.js`: page-wide falling peach blossom petals
+- `assets/player/`, `assets/props/`: player album art and cat, Japanese pixel props (Codex, sliced and keyed)
 - `assets/*.png`: faded background decorations generated with Codex, keyed and downscaled; sources are in `assets/raw/`
 
 Fonts: DotGothic16, Press Start 2P and Silkscreen, with VT323 as a fallback. None of the
