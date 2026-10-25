@@ -18,6 +18,10 @@ const today = () => {
 
 const GITHUB = brand('github/github-original');
 const LINKEDIN = brand('linkedin/linkedin-original');
+// Opens Gmail's web composer in a new tab; a bare mailto: does nothing when no desktop mail app is set up.
+const gmailCompose = (to) =>
+  `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent('Hello from your portfolio')}`;
+const emailLink = (email) => `href="${esc(gmailCompose(email))}" target="_blank" rel="noopener"`;
 
 export const skillBadge = (key) =>
   `<li class="badge"><img src="${iconUrl(key)}" alt="" width="16" height="16" loading="lazy" />${esc(SKILLS[key].label)}</li>`;
@@ -45,7 +49,7 @@ function hero() {
     <div class="row row--sm">
       <a class="btn btn--sm" href="${esc(links.github)}" rel="noopener">${GITHUB}GitHub</a>
       <a class="btn btn--sm" href="${esc(links.linkedin)}" rel="noopener">${LINKEDIN}LinkedIn</a>
-      <a class="btn btn--sm" href="mailto:${esc(links.email)}">${pix('mail')}Email</a>
+      <a class="btn btn--sm" ${emailLink(links.email)}>${pix('mail')}Email</a>
       <a class="btn btn--sm btn--red" href="${esc(links.featured.url)}">${pix('bolt')}${esc(links.featured.label)}</a>
     </div>`;
 }
@@ -282,7 +286,7 @@ function contact() {
     <div class="transmit">
       <p class="label"><span class="sq sq--green"></span>Transmit Message · Email / LinkedIn</p>
       <div class="row row--center">
-        <a class="btn btn--red btn--lg" href="mailto:${esc(links.email)}">${pix('mail')}Send Email (${esc(links.email)})</a>
+        <a class="btn btn--red btn--lg" ${emailLink(links.email)}>${pix('mail')}Send Email (${esc(links.email)})</a>
         <a class="btn btn--lg" href="${esc(links.resume)}">${pix('scroll')}View Resume ↗</a>
       </div>
     </div>
@@ -290,7 +294,7 @@ function contact() {
       <a class="btn btn--sm" href="${esc(links.github)}" rel="noopener">${GITHUB}GitHub</a>
       <a class="btn btn--sm" href="${esc(links.linkedin)}" rel="noopener">${LINKEDIN}LinkedIn</a>
       <a class="btn btn--sm" href="${esc(links.featured.url)}">${pix('bolt')}${esc(links.featured.label)}</a>
-      <a class="btn btn--sm" href="mailto:${esc(links.email)}">${pix('mail')}Email</a>
+      <a class="btn btn--sm" ${emailLink(links.email)}>${pix('mail')}Email</a>
     </div>
     <div class="row row--center">
       <a class="btn btn--sm" href="#top">↑ Return to Top ↑</a>
