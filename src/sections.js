@@ -8,6 +8,8 @@ const iconUrl = (key) => devicon(SKILLS[key].icon);
 const pix = (name) => `<img class="pxi" src="assets/icons/${name}.png" alt="" aria-hidden="true" />`;
 const brand = (path) => `<img class="pxi pxi--brand" src="${devicon(path)}" alt="" aria-hidden="true" />`;
 const KANJI_NUMBERS = ['壱', '弐', '参', '肆', '伍', '陸'];
+// Corner characters on the mahjong skill tiles: server (saba, Japanese slang), screen, storehouse, cloud.
+const SUITS = { backend: '鯖', frontend: '画', data: '蔵', devops: '雲' };
 const GITHUB = brand('github/github-original');
 const LINKEDIN = brand('linkedin/linkedin-original');
 
@@ -192,9 +194,14 @@ function work() {
       ${Object.entries(SKILLS)
         .map(
           ([key, s]) => `
-        <li class="skill-tile" data-group="${s.group}">
-          <img src="${iconUrl(key)}" alt="" width="40" height="40" loading="lazy" />
-          <span>${esc(s.label)}</span>
+        <li class="skill-tile skill-tile--${s.group}" data-group="${s.group}">
+          <span class="skill-tile__body">
+            <span class="skill-tile__face">
+              <span class="skill-tile__suit" aria-hidden="true">${SUITS[s.group]}</span>
+              <img src="${iconUrl(key)}" alt="" width="40" height="40" loading="lazy" />
+              <span>${esc(s.label)}</span>
+            </span>
+          </span>
         </li>`,
         )
         .join('')}

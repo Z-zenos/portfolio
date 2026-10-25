@@ -1535,22 +1535,27 @@ main:focus {
   list-style: none;
 }
 
+/* Skill tiles as mahjong tiles: ivory face, a coloured base showing the tile's thickness,
+   stepped pixel corners and a group character in the corner. Same 104x100 footprint as before. */
 .skill-tile {
-  display: grid;
-  place-items: center;
-  gap: 8px;
+  --c: var(--green);
+  --corner: polygon(4px 0, calc(100% - 4px) 0, calc(100% - 4px) 2px, calc(100% - 2px) 2px, calc(100% - 2px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 2px) calc(100% - 4px), calc(100% - 2px) calc(100% - 2px), calc(100% - 4px) calc(100% - 2px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 2px), 2px calc(100% - 2px), 2px calc(100% - 4px), 0 calc(100% - 4px), 0 4px, 2px 4px, 2px 2px, 4px 2px);
   width: 104px;
   height: 100px;
-  padding: 14px 6px 10px;
-  font-family: var(--font-label);
-  font-weight: 400;
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  background: var(--panel);
-  border: 2px solid var(--ink);
-  box-shadow: var(--shadow-sm);
+  filter: drop-shadow(3px 3px 0 var(--ink));
   transition: transform 0.1s steps(2);
+}
+
+.skill-tile--frontend {
+  --c: var(--red);
+}
+
+.skill-tile--data {
+  --c: var(--navy);
+}
+
+.skill-tile--devops {
+  --c: var(--gold);
 }
 
 .skill-tile[hidden] {
@@ -1558,9 +1563,60 @@ main:focus {
 }
 
 .skill-tile:hover {
-  transform: translateY(-3px);
-  background: var(--white);
-  border-color: var(--green);
+  transform: translateY(-5px) rotate(-3deg);
+}
+
+.skill-tile__body {
+  display: block;
+  height: 100%;
+  padding: 2px;
+  background: var(--ink);
+  clip-path: var(--corner);
+}
+
+.skill-tile__face {
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  place-items: center;
+  height: 100%;
+  padding: 10px 6px 20px;
+  font-family: var(--font-label);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: linear-gradient(#fffdf6, #f1e8d2);
+  clip-path: var(--corner);
+  /* Engraved inner frame, then the ink seam and the coloured base. */
+  box-shadow:
+    inset 0 -10px 0 var(--c),
+    inset 0 -12px 0 var(--ink),
+    inset 0 0 0 4px #fffdf6,
+    inset 0 0 0 5px rgba(42, 38, 34, 0.12);
+}
+
+.skill-tile__face::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 2px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.skill-tile__suit {
+  position: absolute;
+  top: 5px;
+  left: 7px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--c);
+}
+
+.skill-tile:hover .skill-tile__face {
+  background: linear-gradient(#fffefa, #f7f0de);
 }
 
 .projects {
