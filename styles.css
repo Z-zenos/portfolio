@@ -1341,27 +1341,57 @@ main:focus {
   gap: 8px;
 }
 
-.ledger .panel__bar {
+/* Ledger entries: cream plaques with a red hồi văn (key-fret) edge; the selected one gets the red frame. */
+.ledger__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  font-family: var(--font-label);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--navy);
   border: 2px solid var(--ink);
 }
 
-.panel__level--gold {
+.ledger__head > span:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.ledger__head .vi {
+  font-size: 18px;
+  color: var(--gold);
+}
+
+.ledger__count {
+  white-space: nowrap;
   color: var(--gold);
 }
 
 .ledger__item {
   display: grid;
   gap: 2px;
-  padding: 12px 14px;
+  padding: 12px 14px 12px 26px;
   text-align: left;
   font: inherit;
-  background: var(--panel);
+  background:
+    linear-gradient(var(--ink) 0 0) 10px 0 / 2px 100% no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' shape-rendering='crispEdges' fill='%23e0362c' fill-opacity='.55'%3E%3Cpath d='M0 0h10v1H0zM0 0h1v10H0zM2 2h6v1H2zM2 2h1v6H2zM7 2h1v6H7zM4 4h2v1H4zM4 4h1v3H4zM4 6h4v1H4zM2 7h1v3H2z'/%3E%3C/svg%3E") 0 0 / 10px 10px repeat-y,
+    var(--panel);
   border: 2px solid var(--ink);
   box-shadow: var(--shadow-sm);
+  transition: transform 0.1s steps(2);
+}
+
+.ledger__item:hover {
+  transform: translateX(3px);
 }
 
 .ledger__item[aria-pressed='true'] {
-  background: var(--white);
+  background-color: var(--white);
   border: 3px solid var(--red);
   box-shadow: 4px 4px 0 var(--red);
 }
@@ -1398,54 +1428,176 @@ main:focus {
   font-size: 15px;
 }
 
-.quest-detail__bar {
+
+/* The selected quest as a Vietnamese altar board set (hoành phi câu đối): a horizontal board in a
+   red hồi văn (key-fret) frame with a gilded lotus crest, two vertical couplet boards and paper. */
+.altar {
+  --gilt: var(--gold);
+  --hoi-van: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' shape-rendering='crispEdges' fill='%23e0362c'%3E%3Crect x='0' y='0' width='1' height='1'/%3E%3Crect x='1' y='0' width='1' height='1'/%3E%3Crect x='2' y='0' width='1' height='1'/%3E%3Crect x='3' y='0' width='1' height='1'/%3E%3Crect x='4' y='0' width='1' height='1'/%3E%3Crect x='5' y='0' width='1' height='1'/%3E%3Crect x='6' y='0' width='1' height='1'/%3E%3Crect x='7' y='0' width='1' height='1'/%3E%3Crect x='8' y='0' width='1' height='1'/%3E%3Crect x='9' y='0' width='1' height='1'/%3E%3Crect x='0' y='1' width='1' height='1'/%3E%3Crect x='9' y='1' width='1' height='1'/%3E%3Crect x='0' y='2' width='1' height='1'/%3E%3Crect x='2' y='2' width='1' height='1'/%3E%3Crect x='3' y='2' width='1' height='1'/%3E%3Crect x='4' y='2' width='1' height='1'/%3E%3Crect x='5' y='2' width='1' height='1'/%3E%3Crect x='6' y='2' width='1' height='1'/%3E%3Crect x='7' y='2' width='1' height='1'/%3E%3Crect x='9' y='2' width='1' height='1'/%3E%3Crect x='0' y='3' width='1' height='1'/%3E%3Crect x='2' y='3' width='1' height='1'/%3E%3Crect x='7' y='3' width='1' height='1'/%3E%3Crect x='9' y='3' width='1' height='1'/%3E%3Crect x='0' y='4' width='1' height='1'/%3E%3Crect x='2' y='4' width='1' height='1'/%3E%3Crect x='4' y='4' width='1' height='1'/%3E%3Crect x='5' y='4' width='1' height='1'/%3E%3Crect x='7' y='4' width='1' height='1'/%3E%3Crect x='9' y='4' width='1' height='1'/%3E%3Crect x='0' y='5' width='1' height='1'/%3E%3Crect x='2' y='5' width='1' height='1'/%3E%3Crect x='4' y='5' width='1' height='1'/%3E%3Crect x='7' y='5' width='1' height='1'/%3E%3Crect x='9' y='5' width='1' height='1'/%3E%3Crect x='0' y='6' width='1' height='1'/%3E%3Crect x='2' y='6' width='1' height='1'/%3E%3Crect x='4' y='6' width='1' height='1'/%3E%3Crect x='5' y='6' width='1' height='1'/%3E%3Crect x='6' y='6' width='1' height='1'/%3E%3Crect x='7' y='6' width='1' height='1'/%3E%3Crect x='9' y='6' width='1' height='1'/%3E%3Crect x='0' y='7' width='1' height='1'/%3E%3Crect x='2' y='7' width='1' height='1'/%3E%3Crect x='9' y='7' width='1' height='1'/%3E%3Crect x='0' y='8' width='1' height='1'/%3E%3Crect x='2' y='8' width='1' height='1'/%3E%3Crect x='3' y='8' width='1' height='1'/%3E%3Crect x='4' y='8' width='1' height='1'/%3E%3Crect x='5' y='8' width='1' height='1'/%3E%3Crect x='6' y='8' width='1' height='1'/%3E%3Crect x='7' y='8' width='1' height='1'/%3E%3Crect x='8' y='8' width='1' height='1'/%3E%3Crect x='9' y='8' width='1' height='1'/%3E%3Crect x='0' y='9' width='1' height='1'/%3E%3C/svg%3E");
+  position: relative;
+  display: grid;
+  padding-top: 26px;
+}
+
+.hoanh-phi {
+  position: relative;
+  z-index: 1;
+  padding: 9px;
+  background: var(--hoi-van) 0 0 / 10px 10px, var(--white);
+  border: 3px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.hoanh-phi__crest {
+  position: absolute;
+  top: -32px;
+  left: 50%;
+  height: 48px;
+  transform: translateX(-50%);
+  image-rendering: pixelated;
+  filter: drop-shadow(2px 2px 0 rgba(42, 38, 34, 0.6));
+}
+
+.hoanh-phi__board {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 22px 24px 18px;
+  text-align: center;
+  background: var(--panel);
+  border: 2px solid var(--ink);
+}
+
+.hoanh-phi__status {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 8px 16px;
-  background: var(--panel);
-  border-bottom: 2px solid var(--ink);
+  gap: 10px;
+  font-family: var(--font-label);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
 }
 
-.quest-detail__loc {
-  display: inline-flex;
-  align-items: center;
-  margin-left: auto;
-  font-size: 15px;
+.hoanh-phi__status::before,
+.hoanh-phi__status::after {
+  content: '';
+  width: 26px;
+  border-top: 2px dotted currentColor;
 }
 
-.quest-detail__body {
-  display: grid;
-  gap: 14px;
-  padding: 26px 22px 22px;
+.vi {
+  font-family: 'VT323', monospace;
+  font-size: 1.6em;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  line-height: 1;
 }
 
-.quest-detail__role {
+.hoanh-phi__status .vi {
+  order: 1;
+  color: var(--red);
+}
+
+.hoanh-phi__role {
   font-family: var(--font-display);
-  font-size: 30px;
+  font-size: 32px;
   line-height: 1.2;
 }
 
-.quest-detail__company {
-  margin-top: -10px;
+.hoanh-phi__company {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-family: var(--font-label);
-  font-weight: 400;
   font-size: 12px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--red);
 }
 
-.quest-detail__summary {
-  padding: 10px 14px;
-  background: var(--panel);
-  border: 1px solid var(--red);
+.hoanh-phi__seal {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  letter-spacing: 0;
+  color: #fff;
+  background: var(--red);
+  border: 2px solid var(--ink);
+  transform: rotate(-6deg);
+}
+
+.altar__middle {
+  display: grid;
+  grid-template-columns: 46px 1fr 46px;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+/* Câu đối: couplet boards with a red inner frame and vertical text. */
+.cau-doi {
+  display: grid;
+  place-items: center;
+  padding: 18px 0;
+  font-family: var(--font-body);
+  font-size: 15px;
+  letter-spacing: 0.2em;
+  color: var(--red);
+  writing-mode: vertical-rl;
+  background:
+    linear-gradient(var(--red) 0 0) 50% 8px / 14px 2px no-repeat,
+    linear-gradient(var(--red) 0 0) 50% calc(100% - 8px) / 14px 2px no-repeat,
+    var(--white);
+  border: 3px solid var(--ink);
+  box-shadow: inset 0 0 0 3px var(--white), inset 0 0 0 5px var(--red), 4px 4px 0 var(--ink);
+}
+
+.altar__paper {
+  display: grid;
+  gap: 14px;
+  padding: 22px 24px 24px;
+  background:
+    repeating-linear-gradient(97deg, rgba(150, 120, 70, 0.05) 0 1px, transparent 1px 8px),
+    var(--white);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.altar__summary {
+  padding-left: 14px;
+  font-size: 16px;
+  line-height: 1.75;
   border-left: 4px solid var(--red);
 }
 
+.altar__label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-label);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.altar__label .vi {
+  color: var(--red);
+}
+
+.altar__label::after {
+  content: '';
+  flex: 1;
+  border-top: 2px dotted rgba(42, 38, 34, 0.3);
+}
+
+/* Achievements marked with an ancient square-holed coin (đồng tiền). */
 .achievements {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   padding: 0;
   margin: 0;
   list-style: none;
@@ -1453,31 +1605,47 @@ main:focus {
 
 .achievements li {
   position: relative;
-  padding-left: 18px;
+  padding-left: 32px;
 }
 
 .achievements li::before {
   content: '';
   position: absolute;
-  left: 2px;
-  top: 8px;
-  width: 7px;
-  height: 7px;
-  background: var(--green);
-  transform: rotate(45deg);
+  left: 0;
+  top: 3px;
+  width: 22px;
+  height: 22px;
+  background: url('assets/viet/coin.png') center / contain no-repeat;
+  image-rendering: pixelated;
 }
 
-.quest-detail__foot {
+.altar__foot {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 14px;
-  background: var(--panel);
-  border-top: 2px solid var(--ink);
+  margin-top: 18px;
 }
 
-.quest-detail__foot .label {
+.altar__foot .mini-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+}
+
+.altar__count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-label);
   font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.altar__count .vi {
+  color: var(--red);
 }
 
 .compact {
@@ -1497,8 +1665,12 @@ main:focus {
   gap: 4px;
 }
 
-.compact__item .quest-detail__company {
-  margin-top: 0;
+.compact__company {
+  font-family: var(--font-label);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--red);
 }
 
 /* ---------- work: skills & projects ---------- */
@@ -2294,6 +2466,43 @@ main:focus {
     display: none;
   }
 
+  .altar__middle {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cau-doi {
+    padding: 8px 4px;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    writing-mode: horizontal-tb;
+    background: var(--white);
+  }
+
+  .altar__paper {
+    grid-column: 1 / -1;
+    order: -1;
+    padding: 18px;
+  }
+
+  .hoanh-phi__board {
+    padding: 20px 14px 16px;
+  }
+
+  .hoanh-phi__role {
+    font-size: 26px;
+  }
+
+  .altar__foot {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .altar__count {
+    order: -1;
+    justify-content: center;
+    width: 100%;
+  }
+
   .panel__title {
     font-size: 10px;
   }
@@ -2364,22 +2573,10 @@ main:focus {
   display: inline-block;
 }
 
-.quest-detail__foot .mini-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-}
-
 .panel__bar--tight .panel__title,
 .panel__bar--tight .panel__level {
   font-size: 11px;
   white-space: nowrap;
-}
-
-.quest-detail__body .label {
-  font-size: 10px;
-  color: var(--ink-soft);
 }
 
 .mini-tag,

@@ -123,24 +123,40 @@ function about() {
     </div>`;
 }
 
+// Company initials for the red seal on the scroll, e.g. "Your Company" -> "YC".
+const initials = (name) =>
+  name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+// The selected quest as a Vietnamese altar board set: a hoành phi (horizontal board) in a hồi văn
+// frame with a gilded lotus crest, a pair of câu đối (vertical couplet boards) and paper between them.
 function questDetail(q, i, total) {
   return `
-    <div class="quest-detail__bar">
-      <span class="mini-tag mini-tag--green">${i === 0 ? 'Active Chronicle' : 'Past Chronicle'}</span>
-      <span class="label">${esc(q.period)}</span>
-      <span class="quest-detail__loc"><span class="pin"></span>${esc(q.location)}</span>
+    <header class="hoanh-phi">
+      <img class="hoanh-phi__crest" src="assets/viet/lotus.png" alt="" aria-hidden="true" />
+      <div class="hoanh-phi__board">
+        <p class="hoanh-phi__status"><span class="vi">${i === 0 ? 'Hiện tại' : 'Đã qua'}</span>${i === 0 ? 'Active Chronicle' : 'Past Chronicle'}</p>
+        <h3 class="hoanh-phi__role">${esc(q.role)}</h3>
+        <p class="hoanh-phi__company"><span class="hoanh-phi__seal" aria-hidden="true">${esc(initials(q.company))}</span>${esc(q.company)}</p>
+      </div>
+    </header>
+    <div class="altar__middle">
+      <p class="cau-doi"><span class="sr-only">Period: </span>${esc(q.period)}</p>
+      <div class="altar__paper">
+        <p class="altar__summary">${esc(q.summary)}</p>
+        <p class="altar__label">Key Quest Achievements<span class="vi">Thành tựu</span></p>
+        <ol class="achievements">${q.achievements.map((a) => `<li>${esc(a)}</li>`).join('')}</ol>
+        <ul class="badges">${q.skills.map(skillBadge).join('')}</ul>
+      </div>
+      <p class="cau-doi"><span class="sr-only">Location: </span>${esc(q.location)}</p>
     </div>
-    <div class="quest-detail__body">
-      <h3 class="quest-detail__role">${esc(q.role)}</h3>
-      <p class="quest-detail__company">${esc(q.company)}</p>
-      <p class="quest-detail__summary">${esc(q.summary)}</p>
-      <p class="label"><span class="sq sq--navy"></span>Key Quest Achievements</p>
-      <ul class="achievements">${q.achievements.map((a) => `<li>${esc(a)}</li>`).join('')}</ul>
-      <ul class="badges">${q.skills.map(skillBadge).join('')}</ul>
-    </div>
-    <div class="quest-detail__foot">
+    <div class="altar__foot">
       <button type="button" class="mini-btn" data-quest-step="-1" ${i === 0 ? 'disabled' : ''}><span class="ico ico--prev" aria-hidden="true"></span>Prev Quest</button>
-      <span class="label">Quest ${i + 1} of ${total}</span>
+      <span class="altar__count">Chapter ${i + 1} of ${total}<span class="vi">Hồi ${i + 1}</span></span>
       <button type="button" class="mini-btn" data-quest-step="1" ${i === total - 1 ? 'disabled' : ''}>Next Quest<span class="ico ico--play" aria-hidden="true"></span></button>
     </div>`;
 }
@@ -155,7 +171,7 @@ function experience() {
     </div>
     <div class="quests" data-quests>
       <div class="ledger">
-        <div class="panel__bar panel__bar--tight"><span class="panel__title">Quest Ledger · 冒険目録</span><span class="panel__level panel__level--gold">✦ ${qs.length} Quests</span></div>
+        <div class="ledger__head"><span>Quest Ledger<span class="vi">Sổ hành trình</span></span><span class="ledger__count">✦ ${qs.length} Quests</span></div>
         ${qs
           .map(
             (q, i) => `
@@ -167,7 +183,7 @@ function experience() {
           )
           .join('')}
       </div>
-      <article class="quest-detail panel" data-quest-detail>${questDetail(qs[0], 0, qs.length)}</article>
+      <article class="altar" data-quest-detail>${questDetail(qs[0], 0, qs.length)}</article>
     </div>
     <ol class="compact" data-compact hidden>
       ${qs
@@ -176,7 +192,7 @@ function experience() {
         <li class="card compact__item">
           <span class="ledger__period">${esc(q.period)}</span>
           <strong>${esc(q.role)}</strong>
-          <span class="quest-detail__company">${esc(q.company)}</span>
+          <span class="compact__company">${esc(q.company)}</span>
           <p>${esc(q.summary)}</p>
         </li>`,
         )

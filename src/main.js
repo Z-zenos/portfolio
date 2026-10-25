@@ -54,7 +54,20 @@ let quest = 0;
 const showQuest = (i) => {
   quest = Math.max(0, Math.min(profile.quests.length - 1, i));
   renderQuest(quest);
+  if (!reducedMotion) revealQuest();
 };
+
+// The new quest settles in: the couplet boards unfurl top-down and the paper fades up.
+// Only clip-path, opacity and transform animate, so the page layout never moves mid-way.
+function revealQuest() {
+  const timing = { duration: 600, easing: 'cubic-bezier(0.22, 0.8, 0.3, 1)' };
+  document.querySelectorAll('.cau-doi').forEach((board) =>
+    board.animate([{ clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0 0)' }], timing),
+  );
+  document.querySelector('.altar__paper').animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], timing);
+  document.querySelector('.hoanh-phi__board').animate([{ filter: 'brightness(1.35)' }, { filter: 'none' }], timing);
+}
+
 document.querySelector('[data-quests]').addEventListener('click', (e) => {
   const item = e.target.closest('[data-quest]');
   const step = e.target.closest('[data-quest-step]');
