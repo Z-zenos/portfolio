@@ -4,3 +4,4 @@ node_modules/
 assets/raw/*.out
 assets/raw/*.log
 assets/raw/blog/
+.wrangler/
