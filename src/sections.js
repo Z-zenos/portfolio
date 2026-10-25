@@ -7,6 +7,7 @@ const iconUrl = (key) => devicon(SKILLS[key].icon);
 // Pixel icons painted by Codex (assets/icons), and the real GitHub and LinkedIn logos.
 const pix = (name) => `<img class="pxi" src="assets/icons/${name}.png" alt="" aria-hidden="true" />`;
 const brand = (path) => `<img class="pxi pxi--brand" src="${devicon(path)}" alt="" aria-hidden="true" />`;
+const KANJI_NUMBERS = ['壱', '弐', '参', '肆', '伍', '陸'];
 const GITHUB = brand('github/github-original');
 const LINKEDIN = brand('linkedin/linkedin-original');
 
@@ -95,14 +96,20 @@ function about() {
     <div class="expertise">
       <h3 class="label-title">Areas of Expertise</h3>
       <p class="muted center">Craft domains built for reliability and delight</p>
-      <div class="expertise__grid">
+      <div class="ema-rack">
         ${profile.expertise
           .map(
-            (e) => `
-          <article class="card exp-card">
-            <div class="exp-card__top"><span class="exp-card__icon">${pix(e.icon)}</span><span class="mini-tag mini-tag--${e.color}">${esc(e.tag)}</span></div>
-            <h4>${esc(e.title)}</h4>
-            <p>${esc(e.text)}</p>
+            (e, i) => `
+          <article class="ema ema--${e.color}">
+            <div class="ema__board">
+              <div class="ema__face">
+                <span class="ema__no" aria-hidden="true">${KANJI_NUMBERS[i]}</span>
+                <span class="ema__seal">${pix(e.icon)}</span>
+                <h4 class="ema__title">${esc(e.title)}</h4>
+                <p class="ema__text">${esc(e.text)}</p>
+                <p class="ema__tag">${esc(e.tag)}</p>
+              </div>
+            </div>
           </article>`,
           )
           .join('')}
@@ -198,19 +205,22 @@ function work() {
     <div class="projects">
       ${profile.projects
         .map(
-          (p) => `
-        <article class="project">
-          <div class="project__head">
-            <span class="project__logo">${esc(p.logo)}</span>
-            <div>
-              <h4 class="project__name">${esc(p.name)}</h4>
-              <p class="project__sub">${esc(p.subtitle)}</p>
-            </div>
-            <span class="mini-tag mini-tag--${p.badge.color} project__badge">${esc(p.badge.text)}</span>
+          (p, i) => `
+        <article class="ticket${i === 0 ? ' ticket--featured' : ''}">
+          <div class="ticket__stub">
+            <span class="ticket__logo">${esc(p.logo)}</span>
+            <span class="ticket__kanji" aria-hidden="true">乗車券</span>
+            <span class="ticket__no">No.${String(i + 1).padStart(3, '0')}</span>
           </div>
-          <p class="project__text">${esc(p.text)}</p>
-          <ul class="tags">${p.tags.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
-          <a class="btn ${p === profile.projects[0] ? 'btn--red' : ''}" href="${esc(p.link.url)}" rel="noopener">↗ ${esc(p.link.label)}</a>
+          <div class="ticket__body">
+            <p class="ticket__line"><span>${i === 0 ? '特急' : '普通'}</span>${i === 0 ? 'Limited Express' : 'Local Line'} · Platform ${i + 1}</p>
+            <h4 class="ticket__name">${esc(p.name)}</h4>
+            <p class="ticket__sub">${esc(p.subtitle)}</p>
+            <p class="ticket__text">${esc(p.text)}</p>
+            <ul class="tags">${p.tags.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
+            <a class="btn ${i === 0 ? 'btn--red' : ''}" href="${esc(p.link.url)}" rel="noopener">↗ ${esc(p.link.label)}</a>
+          </div>
+          <span class="ticket__stamp ticket__stamp--${p.badge.color}">${esc(p.badge.text)}</span>
         </article>`,
         )
         .join('')}

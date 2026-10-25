@@ -42,7 +42,7 @@ const DECOR = [
 
   ['#work', tategaki('継続は力なり', 'persistence is power', 'right')],
   ['.filters', note({ text: 'sort by class!', ja: '分類', arrow: 'left', pos: 'filters' })],
-  ['.project', note({ text: 'my favourite', ja: 'お気に入り', arrow: 'diag', pos: 'project' }) + hanko('推', 'project')],
+  ['.ticket--featured', note({ text: 'my favourite', ja: 'お気に入り', arrow: 'diag', pos: 'project' }) + hanko('推', 'project')],
 
   ['#contact', tategaki('ご縁を大切に', 'cherish every connection', 'right') + prop('koi', 'koi')],
   ['.transmit', note({ text: 'I reply within a day', ja: 'すぐ返信します', arrow: 'diag', flip: 'flip-x', pos: 'transmit' }) + prop('lucky-cat', 'cat')],

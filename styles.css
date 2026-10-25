@@ -1148,33 +1148,148 @@ main:focus {
 
 /* ---------- about: expertise ---------- */
 
-.expertise__grid {
+/* Expertise as ema (絵馬): wooden votive plaques hung by red cords from a shrine rope. */
+.ema-rack {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 40px 22px;
+  padding-top: 52px;
 }
 
-.exp-card__top {
+.ema {
+  --c: var(--red);
+  --tilt: -1.5deg;
+  --roof: 40px;
+  position: relative;
+  transform: rotate(var(--tilt));
+  transform-origin: 50% -40px;
+  filter: drop-shadow(4px 4px 0 var(--ink));
+}
+
+.ema--navy {
+  --c: var(--navy);
+  --tilt: 1.2deg;
+}
+
+.ema--green {
+  --c: var(--green);
+  --tilt: -0.8deg;
+}
+
+.ema--gold {
+  --c: var(--gold);
+  --tilt: 1.8deg;
+}
+
+/* Rope segment above each plaque, so wrapped rows get their own rope. */
+.ema::before {
+  content: '';
+  position: absolute;
+  top: -48px;
+  left: -14px;
+  right: -14px;
+  height: 9px;
+  background: repeating-linear-gradient(115deg, #8a5a2b 0 5px, #d4a463 5px 9px);
+  border-block: 2px solid var(--ink);
+  transform: rotate(calc(var(--tilt) * -1));
+}
+
+/* Red cord with a knot just above the plaque's peak. */
+.ema::after {
+  content: '';
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  width: 9px;
+  height: 40px;
+  background:
+    linear-gradient(var(--red-deep) 0 0) 0 26px / 100% 7px no-repeat,
+    linear-gradient(90deg, transparent 3px, var(--red) 3px 6px, transparent 6px);
+  transform: translateX(-50%);
+}
+
+.ema:hover {
+  animation: ema-swing 1.4s ease-in-out;
+}
+
+@keyframes ema-swing {
+  25% {
+    transform: rotate(4deg);
+  }
+  55% {
+    transform: rotate(-3deg);
+  }
+  80% {
+    transform: rotate(1.5deg);
+  }
+}
+
+.ema__board {
+  height: 100%;
+  padding: 3px;
+  background: var(--ink);
+  clip-path: polygon(50% 0, 100% var(--roof), 100% 100%, 0 100%, 0 var(--roof));
+}
+
+.ema__face {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 12px;
+  height: 100%;
+  padding: 16px 18px 0;
+  text-align: center;
+  background:
+    repeating-linear-gradient(0deg, rgba(120, 72, 30, 0.07) 0 2px, transparent 2px 9px),
+    #f0d9ad;
+  clip-path: polygon(50% 0, 100% calc(var(--roof) - 1px), 100% 100%, 0 100%, 0 calc(var(--roof) - 1px));
 }
 
-.exp-card__icon .pxi {
-  display: block;
+.ema__no {
+  font-size: 14px;
+  line-height: 1;
+  color: var(--c);
+}
+
+.ema__seal {
+  display: grid;
+  place-items: center;
+  width: 78px;
+  height: 78px;
+  margin: 12px 0 14px;
+  background: var(--white);
+  border: 3px solid var(--c);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--ink), inset 0 0 0 3px rgba(42, 38, 34, 0.08);
+}
+
+.ema__seal .pxi {
   height: 48px;
 }
 
-.exp-card h4 {
+.ema__title {
   margin-bottom: 8px;
-  font-size: 17px;
+  font-size: 18px;
+  line-height: 1.3;
 }
 
-.exp-card p {
+.ema__text {
+  flex: 1;
   font-size: 15px;
   line-height: 1.7;
   color: var(--ink-soft);
+}
+
+.ema__tag {
+  align-self: stretch;
+  margin: 16px -18px 0;
+  padding: 7px 8px;
+  font-family: var(--font-label);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--c);
+  border-top: 3px solid var(--ink);
 }
 
 .expertise .row {
@@ -1453,62 +1568,173 @@ main:focus {
   gap: 26px;
 }
 
-.project {
+/* Projects as Japanese railway tickets (切符): coloured stub, perforation, patterned paper. */
+.ticket {
+  --stub: 128px;
+  --c: var(--navy);
+  position: relative;
   display: grid;
-  gap: 16px;
-  justify-items: start;
-  padding: 24px 26px 26px;
-  background: var(--panel);
+  grid-template-columns: var(--stub) 1fr;
   border: 3px solid var(--ink);
   box-shadow: 6px 6px 0 var(--ink);
 }
 
-.project__head {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 12px;
-  align-items: center;
-  width: 100%;
-  padding-bottom: 14px;
-  border-bottom: 2px solid var(--ink);
+.ticket--featured {
+  --c: var(--red);
 }
 
-.project__logo {
+/* Half-circle notches where the stub tears off. */
+.ticket::before,
+.ticket::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--stub) - 13px);
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+}
+
+.ticket::before {
+  top: -16px;
+  clip-path: inset(50% 0 0 0);
+}
+
+.ticket::after {
+  bottom: -16px;
+  clip-path: inset(0 0 50% 0);
+}
+
+.ticket__stub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 0 20px;
+  color: #fff;
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.07) 0 4px, transparent 4px 10px),
+    var(--c);
+  border-right: 3px dashed var(--ink);
+}
+
+.ticket__logo {
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
+  width: 54px;
+  height: 54px;
   font-family: var(--font-pixel);
-  font-size: 12px;
+  font-size: 13px;
+  color: var(--ink);
   background: var(--white);
-  border: 2px solid var(--ink);
+  border: 3px solid var(--ink);
 }
 
-.project__name {
-  font-size: 26px;
-  line-height: 1.2;
+.ticket__kanji {
+  flex: 1;
+  font-size: 22px;
+  letter-spacing: 0.3em;
+  writing-mode: vertical-rl;
 }
 
-.project__sub {
+.ticket__no {
   font-family: var(--font-label);
-  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+.ticket__body {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 22px 140px 26px 28px;
+  background:
+    repeating-linear-gradient(135deg, rgba(62, 142, 65, 0.06) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(45deg, rgba(62, 142, 65, 0.06) 0 2px, transparent 2px 7px),
+    #eef4ea;
+}
+
+.ticket__line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding-bottom: 10px;
+  font-family: var(--font-label);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border-bottom: 2px dotted rgba(42, 38, 34, 0.4);
+}
+
+.ticket__line span {
+  padding: 1px 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: #fff;
+  background: var(--c);
+}
+
+.ticket__name {
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.ticket__sub {
+  margin-top: -8px;
+  font-family: var(--font-label);
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--navy);
 }
 
-.project__badge {
-  align-self: start;
-  padding: 3px 9px;
-}
-
-.project__text {
+.ticket__text {
   line-height: 1.75;
 }
 
-.project .tags li {
+.ticket .tags li {
   background: var(--white);
+}
+
+/* Status as a round rubber stamp pressed onto the ticket. */
+.ticket__stamp {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  display: grid;
+  place-items: center;
+  width: 104px;
+  height: 104px;
+  padding: 14px;
+  font-family: var(--font-label);
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--red);
+  border: 3px solid currentColor;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 4px #eef4ea, inset 0 0 0 6px currentColor;
+  opacity: 0.85;
+  transform: rotate(-12deg);
+}
+
+.ticket__stamp--gold {
+  color: #c98612;
+}
+
+.ticket__stamp--green {
+  color: var(--green);
+}
+
+.ticket__stamp--navy {
+  color: var(--navy);
 }
 
 #work .row--center {
@@ -1917,7 +2143,7 @@ main:focus {
     border-bottom: 3px solid var(--ink);
   }
 
-  .expertise__grid {
+  .ema-rack {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -1961,8 +2187,55 @@ main:focus {
     display: none;
   }
 
-  .expertise__grid {
+  .ema-rack {
     grid-template-columns: 1fr;
+    max-width: 340px;
+    margin-inline: auto;
+  }
+
+  .ticket {
+    --stub: 0px;
+    grid-template-columns: 1fr;
+  }
+
+  .ticket::before,
+  .ticket::after {
+    display: none;
+  }
+
+  .ticket__stub {
+    flex-direction: row;
+    padding: 12px 16px;
+    border-right: 0;
+    border-bottom: 3px dashed var(--ink);
+  }
+
+  .ticket__logo {
+    width: 42px;
+    height: 42px;
+  }
+
+  .ticket__kanji {
+    font-size: 18px;
+    writing-mode: horizontal-tb;
+  }
+
+  .ticket__body {
+    padding: 18px;
+  }
+
+  .ticket__stamp {
+    top: auto;
+    right: 14px;
+    bottom: 14px;
+    width: 80px;
+    height: 80px;
+    padding: 10px;
+    font-size: 8px;
+  }
+
+  .ticket .hanko--project {
+    display: none;
   }
 
   .panel__title {
@@ -1971,15 +2244,6 @@ main:focus {
 
   .panel__tag {
     display: none;
-  }
-
-  .project__head {
-    grid-template-columns: auto 1fr;
-  }
-
-  .project__badge {
-    grid-column: 1 / -1;
-    justify-self: start;
   }
 
   .player {
@@ -2207,7 +2471,7 @@ main:focus {
 .passport,
 .ledger,
 .filters,
-.project,
+.ticket,
 .transmit,
 .expertise {
   position: relative;
@@ -2406,45 +2670,6 @@ main:focus {
   }
 }
 
-/* washi tape */
-.exp-card,
-.project {
-  position: relative;
-}
-
-.exp-card::before,
-.project::before {
-  content: '';
-  position: absolute;
-  top: -11px;
-  left: 50%;
-  width: 70px;
-  height: 20px;
-  transform: translateX(-50%) rotate(-3deg);
-  background: repeating-linear-gradient(45deg, rgba(226, 98, 126, 0.55) 0 6px, rgba(255, 253, 248, 0.6) 6px 12px);
-  pointer-events: none;
-}
-
-.exp-card:nth-child(2)::before {
-  transform: translateX(-50%) rotate(2deg);
-  background: repeating-linear-gradient(45deg, rgba(47, 111, 115, 0.45) 0 6px, rgba(255, 253, 248, 0.6) 6px 12px);
-}
-
-.exp-card:nth-child(3)::before {
-  transform: translateX(-50%) rotate(-2deg);
-  background: repeating-linear-gradient(-45deg, rgba(240, 165, 49, 0.55) 0 6px, rgba(255, 253, 248, 0.6) 6px 12px);
-}
-
-.exp-card:nth-child(4)::before {
-  transform: translateX(-50%) rotate(4deg);
-  background: repeating-linear-gradient(45deg, rgba(44, 62, 94, 0.4) 0 6px, rgba(255, 253, 248, 0.6) 6px 12px);
-}
-
-.project::before {
-  left: 40px;
-  transform: rotate(-8deg);
-}
-
 /* seigaiha waves along the bottom of the contact section */
 .section--contact::after {
   --wave: radial-gradient(circle at 50% 100%, var(--panel) 0 3px, rgba(44, 62, 94, 0.14) 3px 4px, var(--panel) 4px 8px, rgba(44, 62, 94, 0.14) 8px 9px, var(--panel) 9px 13px, rgba(44, 62, 94, 0.14) 13px 14px, var(--panel) 14px 18px, rgba(44, 62, 94, 0.14) 18px 19px, transparent 19px);
@@ -2491,7 +2716,8 @@ main:focus {
 
 @media (prefers-reduced-motion: reduce) {
   .prop,
-  .toast {
+  .toast,
+  .ema:hover {
     animation: none;
   }
 
