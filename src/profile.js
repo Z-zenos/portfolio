@@ -28,9 +28,9 @@ export const SKILL_GROUPS = [
 ];
 
 export const profile = {
-  domain: 'HUNGDX.DEV', // EDIT
-  name: 'HUNG DX', // EDIT
-  nameJa: 'フン・ディーエックス', // EDIT: your name in katakana
+  domain: 'TUANHA.DEV', // EDIT
+  name: 'HOANG ANH TUAN', // EDIT
+  nameJa: 'ホアン・アイン・トゥアン', // EDIT: your name in katakana
   status: 'STATUS: ACTIVE · OPEN TO NEW QUESTS',
   roles: ['Software Engineer', 'Backend Builder', 'Pixel Art Tinkerer', 'Problem Solver'], // EDIT
   location: 'Vietnam', // EDIT

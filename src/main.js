@@ -82,7 +82,7 @@ document.querySelectorAll('[data-filter]').forEach((tab) =>
 );
 
 // Highlight the nav link of the section in view.
-const links = [...document.querySelectorAll('.nav nav a')];
+const links = [...document.querySelectorAll('.nav__links a')];
 const spy = new IntersectionObserver(
   (entries) =>
     entries.forEach((e) => {
@@ -93,3 +93,31 @@ const spy = new IntersectionObserver(
   { rootMargin: '-45% 0px -50% 0px' },
 );
 document.querySelectorAll('.hero, .section').forEach((el) => spy.observe(el));
+
+// Navbar: local Vietnam time with a sun or moon, compact state on scroll, mobile menu.
+const nav = document.querySelector('[data-nav]');
+const clock = document.querySelector('[data-clock]');
+const sky = document.querySelector('[data-sky]');
+const vnTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+function tick() {
+  const time = vnTime.format(new Date());
+  const hour = Number(time.slice(0, 2));
+  clock.textContent = time;
+  sky.classList.toggle('is-night', hour < 6 || hour >= 18);
+}
+tick();
+setInterval(tick, 30_000);
+
+addEventListener('scroll', () => nav.classList.toggle('is-scrolled', scrollY > 8), { passive: true });
+
+const menu = document.querySelector('[data-menu]');
+menu.addEventListener('click', () => {
+  const open = nav.classList.toggle('is-open');
+  menu.setAttribute('aria-expanded', String(open));
+});
+links.forEach((a) =>
+  a.addEventListener('click', () => {
+    nav.classList.remove('is-open');
+    menu.setAttribute('aria-expanded', 'false');
+  }),
+);

@@ -29,7 +29,7 @@ const prop = (name, pos) => `<img class="prop prop--${pos}" src="assets/props/${
 
 // [container selector, html]
 const DECOR = [
-  ['.hero__name', note({ text: 'yoroshiku ne!', ja: 'よろしくね', arrow: 'left', pos: 'name' })],
+  ['.hero__name', note({ text: 'yoroshiku ne!', ja: 'よろしくね', arrow: 'diag', flip: 'flip-y', pos: 'name' })],
   ['.hero', note({ text: 'play some lo-fi ♪', ja: '音楽どうぞ', arrow: 'left', flip: 'flip-x', pos: 'music' })],
   ['.hero', prop('cloud-long', 'cloud-a') + prop('cloud-small', 'cloud-b') + prop('crane', 'crane')],
 

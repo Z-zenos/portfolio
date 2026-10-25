@@ -18,16 +18,37 @@
   <body>
     <canvas id="petals" aria-hidden="true"></canvas>
 
-    <header class="nav">
-      <a class="nav__logo" href="#top"><span class="nav__mark" aria-hidden="true"></span><span data-domain></span></a>
-      <nav aria-label="Primary">
-        <a href="#top">Home</a>
-        <a href="#about">About</a>
-        <a href="#exp">Exp</a>
-        <a href="#work">Work</a>
-        <a href="#contact">Contact</a>
+    <header class="nav" data-nav>
+      <a class="nav__logo" href="#top" aria-label="Back to top">
+        <svg class="nav__mark" viewBox="0 0 12 16" width="24" height="32" shape-rendering="crispEdges" aria-hidden="true">
+          <rect x="5" y="0" width="2" height="1" fill="#2a2622" />
+          <rect x="3" y="1" width="6" height="1" fill="#2a2622" />
+          <rect x="2" y="2" width="8" height="1" fill="#2a2622" />
+          <rect x="1" y="3" width="10" height="8" fill="#2a2622" />
+          <rect x="2" y="11" width="8" height="1" fill="#2a2622" />
+          <rect x="3" y="12" width="6" height="1" fill="#2a2622" />
+          <rect x="3" y="2" width="6" height="1" fill="#f0a531" />
+          <rect x="2" y="3" width="8" height="8" fill="#e0362c" />
+          <rect x="2" y="5" width="8" height="1" fill="#b8281f" />
+          <rect x="2" y="8" width="8" height="1" fill="#b8281f" />
+          <rect x="3" y="3" width="1" height="8" fill="#ff8a6a" />
+          <rect x="3" y="11" width="6" height="1" fill="#f0a531" />
+          <rect x="5" y="13" width="2" height="3" fill="#e0362c" />
+        </svg>
+        <span class="nav__brand"><span data-domain></span><span class="nav__tag">トゥアンの工房</span></span>
+      </a>
+      <nav class="nav__links" id="nav-links" aria-label="Primary">
+        <a href="#top"><span class="nav__kanji" aria-hidden="true">家</span>Home</a>
+        <a href="#about"><span class="nav__kanji" aria-hidden="true">伝</span>About</a>
+        <a href="#exp"><span class="nav__kanji" aria-hidden="true">歴</span>Exp</a>
+        <a href="#work"><span class="nav__kanji" aria-hidden="true">術</span>Work</a>
+        <a href="#contact"><span class="nav__kanji" aria-hidden="true">結</span>Contact</a>
       </nav>
-      <a class="btn btn--red btn--sm nav__resume" href="#contact">Resume ↗</a>
+      <div class="nav__right">
+        <span class="nav__clock" title="Local time in Vietnam"><span class="nav__sky" data-sky aria-hidden="true"></span><span data-clock>--:--</span><small>VN</small></span>
+        <a class="btn btn--red btn--sm nav__resume" href="#contact">Resume ↗</a>
+        <button type="button" class="nav__menu" data-menu aria-expanded="false" aria-controls="nav-links" aria-label="Open menu"><i></i><i></i><i></i></button>
+      </div>
     </header>
 
     <main id="top">
