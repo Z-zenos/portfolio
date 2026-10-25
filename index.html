@@ -29,6 +29,13 @@
     <link rel="stylesheet" href="styles.css" />
     <script>
       document.documentElement.classList.add('js');
+      // Theme: the visitor's saved choice, otherwise the system setting. Set before first paint.
+      try {
+        const saved = localStorage.getItem('theme');
+        document.documentElement.dataset.theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      } catch {
+        document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
       // The welcome screen plays once per visit and never for reduced motion.
       try {
         if (sessionStorage.getItem('intro-seen') || matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -62,6 +69,7 @@
       </nav>
       <div class="nav__right">
         <button type="button" class="nav__clock" data-sky-toggle title="Local time in Vietnam · click to switch day and night"><span class="nav__sky" data-sky aria-hidden="true"></span><span data-clock>--:--</span><small>VN</small><span class="sr-only" data-sky-label>Switch to night</span></button>
+        <button type="button" class="nav__theme" data-theme-toggle aria-pressed="false" title="Light or dark theme"><span aria-hidden="true" data-theme-glyph>明</span><span class="sr-only">Dark mode</span></button>
         <a class="btn btn--red btn--sm nav__resume" href="#contact">Resume ↗</a>
         <button type="button" class="nav__menu" data-menu aria-expanded="false" aria-controls="nav-links" aria-label="Open menu"><i></i><i></i><i></i></button>
       </div>

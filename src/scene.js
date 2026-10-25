@@ -179,6 +179,14 @@ export async function mountScene(canvas, { reducedMotion = false } = {}) {
   const sparks = [];
   let festivalUntil = 0;
 
+  // The river fades into the page background, so follow the theme's --paper colour.
+  const readPaper = () => {
+    const hex = getComputedStyle(root).getPropertyValue('--paper').trim().slice(1);
+    return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(',');
+  };
+  let paper = readPaper();
+  new MutationObserver(() => (paper = readPaper())).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+
   const spawn = (p = {}) => {
     const [x, y] = blossoms.length ? blossoms[Math.floor(Math.random() * blossoms.length)] : [W * 0.3, GROUND * 0.3];
     return Object.assign(p, {
@@ -292,8 +300,8 @@ export async function mountScene(canvas, { reducedMotion = false } = {}) {
     }
     const tint = g.createLinearGradient(0, GROUND, 0, H);
     tint.addColorStop(0, 'rgba(120,150,170,0.38)');
-    tint.addColorStop(0.55, 'rgba(235,236,230,0.7)');
-    tint.addColorStop(1, 'rgba(251,248,240,1)');
+    tint.addColorStop(0.55, `rgba(${paper},0.7)`);
+    tint.addColorStop(1, `rgba(${paper},1)`);
     g.fillStyle = tint;
     g.fillRect(0, GROUND, W, depth);
     g.fillStyle = 'rgba(255,255,255,0.55)';
@@ -389,7 +397,7 @@ export async function mountScene(canvas, { reducedMotion = false } = {}) {
     new MutationObserver(() => {
       nightMix = root.dataset.sky === 'night' ? 1 : 0;
       render(performance.now());
-    }).observe(root, { attributes: true, attributeFilter: ['data-sky'] });
+    }).observe(root, { attributes: true, attributeFilter: ['data-sky', 'data-theme'] });
   }
 
   // Pointer interaction, in scene pixels.

@@ -12,6 +12,8 @@ Small extras:
 - Click a lantern to light it up, click the tree to shake petals loose, and move over the river to make ripples.
 - Type `tet` or the Konami code (or tap the footer hint) for fireworks and a festive track.
 - A short welcome screen plays once per visit (skipped with reduced motion).
+- Light and dark themes: follows the system setting until the visitor picks one with the 明/暗 button in the navbar (remembered in localStorage). Colours are CSS variables in `styles.css`; objects with their own material (mahjong tiles, ema plaques, tickets) keep dark ink in both themes.
+- Pixel cursors for each kind of target (arrow, pointing hand, text, grab on skill tiles, not-allowed, and a sparkle hand over clickable parts of the scene), defined as `--cur-*` variables.
 
 No build step. ES modules need a local server:
 

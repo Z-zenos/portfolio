@@ -41,7 +41,7 @@ export const profile = {
     resume: '#',
     github: 'https://github.com/',
     linkedin: 'https://www.linkedin.com/',
-    email: 'hung_dx@amira.vn',
+    email: 'hoanganhtuanbk2001@gmail.com',
     featured: { label: 'Pixel Map', url: '#work' },
   },
 

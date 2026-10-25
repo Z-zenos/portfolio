@@ -132,6 +132,34 @@ skyToggle.addEventListener('click', () => {
   tick();
 });
 
+// Theme toggle: light (明) or dark (暗). An explicit choice is remembered; until then the page
+// follows the system setting.
+const themeToggle = document.querySelector('[data-theme-toggle]');
+const themeMeta = document.querySelector('meta[name="theme-color"]');
+const systemDark = matchMedia('(prefers-color-scheme: dark)');
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const dark = theme === 'dark';
+  themeToggle.setAttribute('aria-pressed', String(dark));
+  themeToggle.querySelector('[data-theme-glyph]').textContent = dark ? '暗' : '明';
+  themeMeta.content = dark ? '#161826' : '#fbf8f0';
+}
+applyTheme(document.documentElement.dataset.theme);
+themeToggle.addEventListener('click', () => {
+  const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(theme);
+  try {
+    localStorage.setItem('theme', theme);
+  } catch {}
+});
+systemDark.addEventListener('change', (e) => {
+  let saved = null;
+  try {
+    saved = localStorage.getItem('theme');
+  } catch {}
+  if (!saved) applyTheme(e.matches ? 'dark' : 'light');
+});
+
 addEventListener('scroll', () => nav.classList.toggle('is-scrolled', scrollY > 8), { passive: true });
 
 const menu = document.querySelector('[data-menu]');
