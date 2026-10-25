@@ -1,5 +1,7 @@
 // Hero scene: the Codex-painted Hội An corner (assets/hero.png) with live effects on top.
 // Lanterns glow at fixed light points, petals fall from the canopy's pink pixels, and the river below mirrors the whole scene with a ripple.
+// At night (html[data-sky="night"]) the art dims under a starry sky with fireflies. Visitors can
+// click lanterns and the tree, stir the river, and a "festival" event fires fireworks.
 
 const ART = 'assets/hero.png';
 const WATER_RATIO = 0.3;
@@ -9,6 +11,8 @@ const SPREAD = 0.6;
 const PAVING_ROWS = 6;
 
 const PETAL_COLORS = ['#fbcad7', '#f29bb3', '#e8789a', '#f7b3c6'];
+const FIREWORK_COLORS = ['#ff5a4a', '#ffd166', '#f29bb3', '#fff4d6', '#7fd4a8'];
+const MOON = [200, 10, 5];
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -100,6 +104,51 @@ function makeGlow(w, h, offset) {
   return glow;
 }
 
+// Night version of the scene: the art multiplied toward blue, keeping its own transparency.
+function makeNight(base) {
+  const night = makeCanvas(base.width, base.height);
+  const ng = night.getContext('2d');
+  ng.drawImage(base, 0, 0);
+  ng.globalCompositeOperation = 'multiply';
+  ng.fillStyle = '#5a64a6';
+  ng.fillRect(0, 0, base.width, base.height);
+  ng.globalCompositeOperation = 'destination-in';
+  ng.drawImage(base, 0, 0);
+  return night;
+}
+
+// Night sky behind the art: a soft indigo halo with stars and a crescent moon.
+function makeSky(w, h, pad, artW) {
+  const cx = pad + artW / 2;
+  const sky = makeCanvas(w, h);
+  const sg = sky.getContext('2d');
+  const halo = sg.createRadialGradient(cx, h * 0.45, 10, cx, h * 0.45, h * 1.1);
+  halo.addColorStop(0, 'rgba(36,44,92,0.95)');
+  halo.addColorStop(0.6, 'rgba(44,52,104,0.75)');
+  halo.addColorStop(1, 'rgba(44,52,104,0)');
+  sg.fillStyle = halo;
+  sg.fillRect(0, 0, w, h);
+  // Fade the top edge so the sky has no hard line where the canvas starts.
+  const fade = sg.createLinearGradient(0, 0, 0, h * 0.35);
+  fade.addColorStop(0, 'rgba(0,0,0,0)');
+  fade.addColorStop(1, 'rgba(0,0,0,1)');
+  sg.globalCompositeOperation = 'destination-in';
+  sg.fillStyle = fade;
+  sg.fillRect(0, 0, w, h);
+  sg.globalCompositeOperation = 'source-over';
+  const [mx, my, r] = MOON;
+  for (let y = -r; y <= r; y++) {
+    for (let x = -r; x <= r; x++) {
+      if (x * x + y * y > r * r) continue;
+      const bite = (x - 2) ** 2 + (y + 1) ** 2 <= (r - 1) ** 2;
+      if (bite) continue;
+      sg.fillStyle = x + y < -2 ? '#fff6d8' : '#f2dc8c';
+      sg.fillRect(pad + mx + x, my + y, 1, 1);
+    }
+  }
+  return sky;
+}
+
 export async function mountScene(canvas, { reducedMotion = false } = {}) {
   const img = await loadImage(ART);
   const PAD = Math.round(img.width * SPREAD);
@@ -114,6 +163,21 @@ export async function mountScene(canvas, { reducedMotion = false } = {}) {
   const blossoms = findBlossoms(img).map(([x, y]) => [x + PAD, y]);
   const glow = makeGlow(W, GROUND, PAD);
   const base = buildBase(img, PAD);
+  const night = makeNight(base);
+  const sky = makeSky(W, GROUND, PAD, img.width);
+  const root = document.documentElement;
+  let nightMix = root.dataset.sky === 'night' ? 1 : 0;
+
+  let seed = 5;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const stars = Array.from({ length: 70 }, () => [Math.floor(rand() * W), Math.floor(rand() * GROUND * 0.55), rand() * 6.28]);
+  const fireflies = Array.from({ length: 12 }, () => ({ x: PAD + rand() * img.width * 0.7, y: GROUND * (0.35 + rand() * 0.5), phase: rand() * 6.28 }));
+  const burst = [];
+  const flares = [];
+  const ripples = [];
+  const rockets = [];
+  const sparks = [];
+  let festivalUntil = 0;
 
   const spawn = (p = {}) => {
     const [x, y] = blossoms.length ? blossoms[Math.floor(Math.random() * blossoms.length)] : [W * 0.3, GROUND * 0.3];
@@ -142,13 +206,71 @@ export async function mountScene(canvas, { reducedMotion = false } = {}) {
     last = now;
     const t = now / 1000;
 
+    const wantNight = root.dataset.sky === 'night' || now < festivalUntil ? 1 : 0;
+    nightMix += Math.sign(wantNight - nightMix) * Math.min(Math.abs(wantNight - nightMix), dt * 1.2);
+
     fg.clearRect(0, 0, W, GROUND);
+    if (nightMix > 0) {
+      fg.globalAlpha = nightMix;
+      fg.drawImage(sky, 0, 0);
+      for (const [x, y, ph] of stars) {
+        fg.globalAlpha = nightMix * (0.35 + 0.65 * Math.max(0, Math.sin(t * 1.7 + ph)));
+        fg.fillStyle = '#fff6d8';
+        fg.fillRect(x, y, 1, 1);
+      }
+      fg.globalAlpha = 1;
+    }
     fg.drawImage(base, 0, 0);
+    if (nightMix > 0) {
+      fg.globalAlpha = nightMix;
+      fg.drawImage(night, 0, 0);
+    }
     fg.globalCompositeOperation = 'lighter';
-    fg.globalAlpha = 0.75 + Math.sin(t * 2.2) * 0.15 + Math.sin(t * 7.3) * 0.05;
+    fg.globalAlpha = (0.75 + Math.sin(t * 2.2) * 0.15 + Math.sin(t * 7.3) * 0.05) * (1 + nightMix * 0.6);
     fg.drawImage(glow, 0, 0);
+    for (let i = flares.length - 1; i >= 0; i--) {
+      const f = flares[i];
+      const life = 1 - (now - f.start) / 1400;
+      if (life <= 0) {
+        flares.splice(i, 1);
+        continue;
+      }
+      const grad = fg.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r * 2.2);
+      grad.addColorStop(0, `rgba(255,200,110,${0.9 * life})`);
+      grad.addColorStop(1, 'rgba(255,200,110,0)');
+      fg.globalAlpha = 1;
+      fg.fillStyle = grad;
+      fg.fillRect(f.x - f.r * 2.2, f.y - f.r * 2.2, f.r * 4.4, f.r * 4.4);
+    }
+    drawFireworks(dt);
     fg.globalAlpha = 1;
     fg.globalCompositeOperation = 'source-over';
+
+    if (nightMix > 0) {
+      for (const f of fireflies) {
+        const x = Math.round(f.x + Math.sin(t * 0.6 + f.phase) * 10);
+        const y = Math.round(f.y + Math.sin(t * 0.9 + f.phase * 2) * 5);
+        fg.globalAlpha = nightMix * Math.max(0, Math.sin(t * 2.4 + f.phase));
+        fg.fillStyle = '#e8ff8a';
+        fg.fillRect(x, y, 1, 1);
+      }
+      fg.globalAlpha = 1;
+    }
+
+    for (let i = burst.length - 1; i >= 0; i--) {
+      const p = burst[i];
+      p.vy += 30 * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= 0.98;
+      if (p.y > GROUND + 2) {
+        burst.splice(i, 1);
+        continue;
+      }
+      fg.fillStyle = p.color;
+      const w = Math.sin(t * 6 + p.phase) > 0 ? 2 : 1;
+      fg.fillRect(Math.round(p.x), Math.round(p.y), w, 3 - w);
+    }
 
     for (const p of petals) {
       p.y += p.vy * dt;
@@ -180,6 +302,21 @@ export async function mountScene(canvas, { reducedMotion = false } = {}) {
       if (Math.sin(t * 2.6 + k) > 0.3) g.fillRect(x, GROUND + 3 + ((k * 11) % (depth - 8)), 5, 1);
     }
 
+    // Rings where the pointer stirred the river.
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const rp = ripples[i];
+      const age = (now - rp.start) / 1000;
+      if (age > 1.6) {
+        ripples.splice(i, 1);
+        continue;
+      }
+      const rx = 2 + age * 14;
+      g.fillStyle = `rgba(255,255,255,${0.75 * (1 - age / 1.6)})`;
+      for (let a = 0; a < 6.28; a += 0.35) {
+        g.fillRect(Math.round(rp.x + Math.cos(a) * rx), Math.round(rp.y + Math.sin(a) * rx * 0.3), 1, 1);
+      }
+    }
+
     // Floating lotus lanterns (đèn hoa đăng).
     for (const f of floaters) {
       f.x = (f.x + f.speed * dt) % (W + 12);
@@ -203,6 +340,95 @@ export async function mountScene(canvas, { reducedMotion = false } = {}) {
 
     if (!reducedMotion && visible) raf = requestAnimationFrame(render);
   }
+
+  // Rockets rise from the river and burst into sparks over the scene (drawn additively).
+  function drawFireworks(dt) {
+    const now = performance.now();
+    if (now < festivalUntil && Math.random() < dt * 4.5) {
+      rockets.push({ x: PAD * 0.6 + Math.random() * (W - PAD * 0.6 - 10), y: GROUND, top: 10 + Math.random() * 45, color: FIREWORK_COLORS[Math.floor(Math.random() * FIREWORK_COLORS.length)] });
+    }
+    fg.fillStyle = '#fff4d6';
+    for (let i = rockets.length - 1; i >= 0; i--) {
+      const r = rockets[i];
+      r.y -= 90 * dt;
+      fg.fillRect(Math.round(r.x), Math.round(r.y), 1, 2);
+      if (r.y > r.top) continue;
+      rockets.splice(i, 1);
+      flares.push({ x: r.x, y: r.y, r: 14, start: now });
+      for (let k = 0; k < 60; k++) {
+        const a = (k / 60) * 6.28 * 3;
+        const speed = [20, 34, 46][k % 3] + Math.random() * 6;
+        sparks.push({ x: r.x, y: r.y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, life: 1, color: r.color });
+      }
+    }
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const p = sparks[i];
+      p.life -= dt * 0.65;
+      if (p.life <= 0) {
+        sparks.splice(i, 1);
+        continue;
+      }
+      p.vy += 22 * dt;
+      p.vx *= 0.97;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      fg.globalAlpha = Math.min(1, p.life * 1.5);
+      fg.fillStyle = p.life < 0.3 && Math.random() < 0.5 ? '#fff4d6' : p.color;
+      fg.fillRect(Math.round(p.x), Math.round(p.y), 1, 1);
+      fg.globalAlpha *= 0.4;
+      fg.fillRect(Math.round(p.x - p.vx * 0.04), Math.round(p.y - p.vy * 0.04), 1, 1);
+    }
+    fg.globalAlpha = 1;
+  }
+
+  addEventListener('festival', () => {
+    festivalUntil = performance.now() + 9000;
+  });
+  // Without the animation loop, redraw a still frame whenever day and night switch.
+  if (reducedMotion) {
+    new MutationObserver(() => {
+      nightMix = root.dataset.sky === 'night' ? 1 : 0;
+      render(performance.now());
+    }).observe(root, { attributes: true, attributeFilter: ['data-sky'] });
+  }
+
+  // Pointer interaction, in scene pixels.
+  const toScene = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    return [((e.clientX - rect.left) / rect.width) * W, ((e.clientY - rect.top) / rect.height) * H];
+  };
+  const lights = LIGHTS.map(([x, y, r]) => ({ x: x + PAD, y, r }));
+  const lanternAt = (x, y) => lights.find((l) => Math.hypot(l.x - x, l.y - y) < Math.max(5, l.r * 0.5));
+  const blossomsNear = (x, y, r) => blossoms.filter(([bx, by]) => Math.abs(bx - x) < r && Math.abs(by - y) < r);
+  let lastRipple = 0;
+
+  canvas.addEventListener('pointermove', (e) => {
+    const [x, y] = toScene(e);
+    canvas.classList.toggle('is-hot', y < GROUND && Boolean(lanternAt(x, y) || blossomsNear(x, y, 3).length));
+    const now = performance.now();
+    if (y > GROUND + 2 && now - lastRipple > 140 && ripples.length < 14) {
+      lastRipple = now;
+      ripples.push({ x, y, start: now });
+    }
+  });
+  canvas.addEventListener('click', (e) => {
+    const [x, y] = toScene(e);
+    const now = performance.now();
+    const lantern = lanternAt(x, y);
+    if (lantern) {
+      flares.push({ ...lantern, start: now });
+      return;
+    }
+    const near = blossomsNear(x, y, 12);
+    if (near.length) {
+      for (let k = 0; k < 18; k++) {
+        const [bx, by] = near[Math.floor(Math.random() * near.length)];
+        burst.push({ x: bx, y: by, vx: (Math.random() - 0.5) * 50, vy: -10 - Math.random() * 20, phase: Math.random() * 6.28, color: PETAL_COLORS[k % PETAL_COLORS.length] });
+      }
+    } else if (y > GROUND) {
+      ripples.push({ x, y, start: now }, { x, y, start: now - 400 });
+    }
+  });
 
   new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;

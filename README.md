@@ -6,6 +6,13 @@ The hero is an original Hoi An scene painted by Codex (assets/hero.png): a peach
 Code adds the live effects: lantern glow, falling peach petals, a rippling river reflection and floating lotus lanterns.
 A generative lo-fi player (WebAudio, no audio files) sits in the corner.
 
+Small extras:
+
+- Day and night follow the local time in Vietnam. After 18:00 the scene dims under a starry sky with fireflies; the navbar clock switches it by hand.
+- Click a lantern to light it up, click the tree to shake petals loose, and move over the river to make ripples.
+- Type `tet` or the Konami code (or tap the footer hint) for fireworks and a festive track.
+- A short welcome screen plays once per visit (skipped with reduced motion).
+
 No build step. ES modules need a local server:
 
 ```sh
@@ -22,12 +29,13 @@ stats, story, expertise, quests (experience), skills, projects and links.
 
 - `src/profile.js`: content
 - `src/sections.js`: renders each section from the content
-- `src/main.js`: wiring (typewriter, quest log, skill filters, vitals roll, nav highlight)
-- `src/scene.js`: hero effects on top of `assets/hero.png`
+- `src/main.js`: wiring (typewriter, quest log, skill filters, vitals roll, nav highlight, day/night clock, welcome screen, Tet easter egg)
+- `src/scene.js`: hero effects on top of `assets/hero.png` (night sky, clicks, river ripples, fireworks)
 - `src/lofi-player.js`: generative lo-fi engine and the radio player UI (prev/next, real audio visualizer, volume, minimize)
 - `src/decor.js`: handwritten notes, hanko stamps, tategaki phrases and pixel props
 - `src/petals.js`: page-wide falling peach blossom petals
 - `assets/player/`, `assets/props/`: player album art and cat, Japanese pixel props (Codex, sliced and keyed)
+- `assets/favicon.svg`: the pixel lantern used as favicon, nav logo and welcome screen; `assets/og.png` is the link preview (a 1200x630 screenshot of the hero)
 - `assets/*.png`: faded background decorations generated with Codex, keyed and downscaled; sources are in `assets/raw/`
 
 Fonts: DotGothic16, Press Start 2P and Silkscreen, with VT323 as a fallback. None of the

@@ -3,8 +3,23 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Portfolio</title>
-    <meta name="description" content="Pixel-art portfolio set on a Hoi An street corner." />
+    <title>Hoang Anh Tuan · tuanha.dev</title>
+    <meta name="description" content="Hoang Anh Tuan, software engineer from Vietnam. A pixel-art portfolio set on a Hoi An street corner." />
+    <meta name="theme-color" content="#fbf8f0" />
+    <link rel="canonical" href="https://tuanha.dev/" />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tuanha.dev/" />
+    <meta property="og:site_name" content="tuanha.dev" />
+    <meta property="og:title" content="Hoang Anh Tuan · Software Engineer" />
+    <meta property="og:description" content="A pixel-art portfolio set on a Hoi An street corner. Quests, skills and lo-fi radio." />
+    <meta property="og:image" content="https://tuanha.dev/assets/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Pixel art of a Hoi An shophouse under a peach blossom tree, beside the name Hoang Anh Tuan" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -12,29 +27,30 @@
       href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&family=Yomogi&display=swap"
     />
     <link rel="stylesheet" href="styles.css" />
-    <script>document.documentElement.classList.add('js');</script>
+    <script>
+      document.documentElement.classList.add('js');
+      // The welcome screen plays once per visit and never for reduced motion.
+      try {
+        if (sessionStorage.getItem('intro-seen') || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          document.documentElement.classList.add('intro-seen');
+        }
+      } catch {}
+    </script>
     <script type="module" src="src/main.js"></script>
   </head>
   <body>
+    <a class="skip" href="#top">Skip to content</a>
+    <div class="intro" data-intro aria-hidden="true">
+      <img class="intro__lantern" src="assets/favicon.svg" width="72" height="96" alt="" />
+      <p class="intro__ja">ようこそ</p>
+      <p class="intro__domain">TUANHA.DEV</p>
+      <span class="intro__bar"><i></i></span>
+    </div>
     <canvas id="petals" aria-hidden="true"></canvas>
 
     <header class="nav" data-nav>
       <a class="nav__logo" href="#top" aria-label="Back to top">
-        <svg class="nav__mark" viewBox="0 0 12 16" width="24" height="32" shape-rendering="crispEdges" aria-hidden="true">
-          <rect x="5" y="0" width="2" height="1" fill="#2a2622" />
-          <rect x="3" y="1" width="6" height="1" fill="#2a2622" />
-          <rect x="2" y="2" width="8" height="1" fill="#2a2622" />
-          <rect x="1" y="3" width="10" height="8" fill="#2a2622" />
-          <rect x="2" y="11" width="8" height="1" fill="#2a2622" />
-          <rect x="3" y="12" width="6" height="1" fill="#2a2622" />
-          <rect x="3" y="2" width="6" height="1" fill="#f0a531" />
-          <rect x="2" y="3" width="8" height="8" fill="#e0362c" />
-          <rect x="2" y="5" width="8" height="1" fill="#b8281f" />
-          <rect x="2" y="8" width="8" height="1" fill="#b8281f" />
-          <rect x="3" y="3" width="1" height="8" fill="#ff8a6a" />
-          <rect x="3" y="11" width="6" height="1" fill="#f0a531" />
-          <rect x="5" y="13" width="2" height="3" fill="#e0362c" />
-        </svg>
+        <img class="nav__mark" src="assets/favicon.svg" width="24" height="32" alt="" />
         <span class="nav__brand"><span data-domain></span><span class="nav__tag">トゥアンの工房</span></span>
       </a>
       <nav class="nav__links" id="nav-links" aria-label="Primary">
@@ -45,13 +61,13 @@
         <a href="#contact"><span class="nav__kanji" aria-hidden="true">結</span>Contact</a>
       </nav>
       <div class="nav__right">
-        <span class="nav__clock" title="Local time in Vietnam"><span class="nav__sky" data-sky aria-hidden="true"></span><span data-clock>--:--</span><small>VN</small></span>
+        <button type="button" class="nav__clock" data-sky-toggle title="Local time in Vietnam · click to switch day and night"><span class="nav__sky" data-sky aria-hidden="true"></span><span data-clock>--:--</span><small>VN</small><span class="sr-only" data-sky-label>Switch to night</span></button>
         <a class="btn btn--red btn--sm nav__resume" href="#contact">Resume ↗</a>
         <button type="button" class="nav__menu" data-menu aria-expanded="false" aria-controls="nav-links" aria-label="Open menu"><i></i><i></i><i></i></button>
       </div>
     </header>
 
-    <main id="top">
+    <main id="top" tabindex="-1">
       <section class="hero">
         <div class="hero__scene">
           <canvas id="scene" role="img" aria-label="Pixel art of a Hoi An shophouse beside a red flame tree, with lanterns reflected in the river"></canvas>

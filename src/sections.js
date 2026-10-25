@@ -2,7 +2,13 @@
 import { profile, SKILLS, SKILL_GROUPS } from './profile.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const iconUrl = (key) => `https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/${SKILLS[key].icon}.svg`;
+const devicon = (path) => `https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/icons/${path}.svg`;
+const iconUrl = (key) => devicon(SKILLS[key].icon);
+// Pixel icons painted by Codex (assets/icons), and the real GitHub and LinkedIn logos.
+const pix = (name) => `<img class="pxi" src="assets/icons/${name}.png" alt="" aria-hidden="true" />`;
+const brand = (path) => `<img class="pxi pxi--brand" src="${devicon(path)}" alt="" aria-hidden="true" />`;
+const GITHUB = brand('github/github-original');
+const LINKEDIN = brand('linkedin/linkedin-original');
 
 export const skillBadge = (key) =>
   `<li class="badge"><img src="${iconUrl(key)}" alt="" width="16" height="16" loading="lazy" />${esc(SKILLS[key].label)}</li>`;
@@ -24,14 +30,14 @@ function hero() {
     <p class="hero__meta"><span class="pin"></span>${esc(profile.location)} <span class="sep">•</span> ${esc(profile.experience)}</p>
     <ul class="badges">${profile.heroSkills.map(skillBadge).join('')}</ul>
     <div class="row">
-      <a class="btn btn--red btn--lg" href="${esc(links.resume)}">▤ View Resume</a>
+      <a class="btn btn--red btn--lg" href="${esc(links.resume)}">${pix('scroll')}View Resume</a>
       <a class="btn btn--lg" href="#exp">↓ Adventure Log</a>
     </div>
     <div class="row row--sm">
-      <a class="btn btn--sm" href="${esc(links.github)}" rel="noopener">⌥ GitHub</a>
-      <a class="btn btn--sm" href="${esc(links.linkedin)}" rel="noopener">❖ LinkedIn</a>
-      <a class="btn btn--sm" href="mailto:${esc(links.email)}">✉ Email</a>
-      <a class="btn btn--sm btn--red" href="${esc(links.featured.url)}">⚡ ${esc(links.featured.label)}</a>
+      <a class="btn btn--sm" href="${esc(links.github)}" rel="noopener">${GITHUB}GitHub</a>
+      <a class="btn btn--sm" href="${esc(links.linkedin)}" rel="noopener">${LINKEDIN}LinkedIn</a>
+      <a class="btn btn--sm" href="mailto:${esc(links.email)}">${pix('mail')}Email</a>
+      <a class="btn btn--sm btn--red" href="${esc(links.featured.url)}">${pix('bolt')}${esc(links.featured.label)}</a>
     </div>`;
 }
 
@@ -60,7 +66,7 @@ function about() {
               .join('')}
           </div>
           <div class="vitals">
-            <div class="vitals__head"><span>System Vitals · 能力値</span><button type="button" class="mini-btn" data-roll>🎲 Roll</button></div>
+            <div class="vitals__head"><span>System Vitals · 能力値</span><button type="button" class="mini-btn" data-roll>${pix('dice')}Roll</button></div>
             ${a.vitals
               .map(
                 (v) => `
@@ -94,7 +100,7 @@ function about() {
           .map(
             (e) => `
           <article class="card exp-card">
-            <div class="exp-card__top"><span class="exp-card__icon" aria-hidden="true">${e.icon}</span><span class="mini-tag mini-tag--${e.color}">${esc(e.tag)}</span></div>
+            <div class="exp-card__top"><span class="exp-card__icon">${pix(e.icon)}</span><span class="mini-tag mini-tag--${e.color}">${esc(e.tag)}</span></div>
             <h4>${esc(e.title)}</h4>
             <p>${esc(e.text)}</p>
           </article>`,
@@ -102,8 +108,8 @@ function about() {
           .join('')}
       </div>
       <div class="row row--center">
-        <a class="btn btn--red btn--lg" href="${esc(profile.links.resume)}">▤ View Complete Resume</a>
-        <a class="btn btn--lg" href="#contact">✉ Get in Touch</a>
+        <a class="btn btn--red btn--lg" href="${esc(profile.links.resume)}">${pix('scroll')}View Complete Resume</a>
+        <a class="btn btn--lg" href="#contact">${pix('mail')}Get in Touch</a>
       </div>
     </div>`;
 }
@@ -222,20 +228,21 @@ function contact() {
     <div class="transmit">
       <p class="label"><span class="sq sq--green"></span>Transmit Message · Email / LinkedIn</p>
       <div class="row row--center">
-        <a class="btn btn--red btn--lg" href="mailto:${esc(links.email)}">✉ Send Email (${esc(links.email)})</a>
-        <a class="btn btn--lg" href="${esc(links.resume)}">▤ View Resume ↗</a>
+        <a class="btn btn--red btn--lg" href="mailto:${esc(links.email)}">${pix('mail')}Send Email (${esc(links.email)})</a>
+        <a class="btn btn--lg" href="${esc(links.resume)}">${pix('scroll')}View Resume ↗</a>
       </div>
     </div>
     <div class="row row--center row--sm">
-      <a class="btn btn--sm" href="${esc(links.github)}" rel="noopener">⌥ GitHub</a>
-      <a class="btn btn--sm" href="${esc(links.linkedin)}" rel="noopener">❖ LinkedIn</a>
-      <a class="btn btn--sm" href="${esc(links.featured.url)}">⚡ ${esc(links.featured.label)}</a>
-      <a class="btn btn--sm" href="mailto:${esc(links.email)}">✉ Email</a>
+      <a class="btn btn--sm" href="${esc(links.github)}" rel="noopener">${GITHUB}GitHub</a>
+      <a class="btn btn--sm" href="${esc(links.linkedin)}" rel="noopener">${LINKEDIN}LinkedIn</a>
+      <a class="btn btn--sm" href="${esc(links.featured.url)}">${pix('bolt')}${esc(links.featured.label)}</a>
+      <a class="btn btn--sm" href="mailto:${esc(links.email)}">${pix('mail')}Email</a>
     </div>
     <div class="row row--center">
       <a class="btn btn--sm" href="#top">↑ Return to Top ↑</a>
     </div>
-    <p class="footer"><span class="tile tile--red tile--xs">印</span>© ${new Date().getFullYear()} ${esc(profile.name)}</p>`;
+    <p class="footer"><span class="tile tile--red tile--xs">印</span>© ${new Date().getFullYear()} ${esc(profile.name)}</p>
+    <button type="button" class="footer__egg" data-festival>psst… type <kbd>t</kbd><kbd>e</kbd><kbd>t</kbd> anywhere, or tap here ${pix('lixi')}</button>`;
 }
 
 export function renderSections() {
@@ -244,7 +251,7 @@ export function renderSections() {
   document.querySelector('#exp .wrap').innerHTML = experience();
   document.querySelector('#work .wrap').innerHTML = work();
   document.querySelector('#contact .wrap').innerHTML = contact();
-  document.title = `${profile.name} | ${profile.roles[0]}`;
+  document.title = `${profile.name} · ${profile.domain.toLowerCase()}`;
   document.querySelector('[data-domain]').textContent = profile.domain;
 }
 

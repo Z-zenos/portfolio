@@ -11,7 +11,7 @@ renderSections();
 mountDecor();
 mountScene(document.querySelector('#scene'), { reducedMotion });
 if (!reducedMotion) mountPetals(document.querySelector('#petals'));
-mountPlayer(document.querySelector('#player'));
+const player = mountPlayer(document.querySelector('#player'));
 
 // Typewriter cycling through roles in the hero.
 function typewriter(el, words) {
@@ -94,30 +94,84 @@ const spy = new IntersectionObserver(
 );
 document.querySelectorAll('.hero, .section').forEach((el) => spy.observe(el));
 
-// Navbar: local Vietnam time with a sun or moon, compact state on scroll, mobile menu.
+// Navbar: local Vietnam time sets day or night for the page (the hero scene reads
+// html[data-sky]); the clock button flips it until the next reload.
 const nav = document.querySelector('[data-nav]');
 const clock = document.querySelector('[data-clock]');
 const sky = document.querySelector('[data-sky]');
+const skyToggle = document.querySelector('[data-sky-toggle]');
+const skyLabel = document.querySelector('[data-sky-label]');
 const vnTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+let skyOverride = null;
 function tick() {
   const time = vnTime.format(new Date());
   const hour = Number(time.slice(0, 2));
+  const night = skyOverride ? skyOverride === 'night' : hour < 6 || hour >= 18;
   clock.textContent = time;
-  sky.classList.toggle('is-night', hour < 6 || hour >= 18);
+  document.documentElement.dataset.sky = night ? 'night' : 'day';
+  sky.classList.toggle('is-night', night);
+  skyLabel.textContent = night ? 'Switch to day' : 'Switch to night';
 }
 tick();
 setInterval(tick, 30_000);
+skyToggle.addEventListener('click', () => {
+  skyOverride = document.documentElement.dataset.sky === 'night' ? 'day' : 'night';
+  tick();
+});
 
 addEventListener('scroll', () => nav.classList.toggle('is-scrolled', scrollY > 8), { passive: true });
 
 const menu = document.querySelector('[data-menu]');
-menu.addEventListener('click', () => {
-  const open = nav.classList.toggle('is-open');
+const setMenu = (open) => {
+  nav.classList.toggle('is-open', open);
   menu.setAttribute('aria-expanded', String(open));
+};
+menu.addEventListener('click', () => setMenu(!nav.classList.contains('is-open')));
+links.forEach((a) => a.addEventListener('click', () => setMenu(false)));
+addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && nav.classList.contains('is-open')) {
+    setMenu(false);
+    menu.focus();
+  }
 });
-links.forEach((a) =>
-  a.addEventListener('click', () => {
-    nav.classList.remove('is-open');
-    menu.setAttribute('aria-expanded', 'false');
-  }),
-);
+
+// Welcome screen: stays until the page has loaded (at least briefly, at most a few seconds).
+const intro = document.querySelector('[data-intro]');
+if (!document.documentElement.classList.contains('intro-seen')) {
+  const loaded = document.readyState === 'complete' ? Promise.resolve() : new Promise((r) => addEventListener('load', r, { once: true }));
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  Promise.race([Promise.all([loaded, document.fonts.ready, wait(1100)]), wait(3500)]).then(() => {
+    intro.classList.add('is-done');
+    intro.addEventListener('transitionend', () => intro.remove(), { once: true });
+    try {
+      sessionStorage.setItem('intro-seen', '1');
+    } catch {}
+  });
+} else {
+  intro.remove();
+}
+
+// Tet easter egg: type "tet" or the Konami code (or press the footer hint) for fireworks
+// over the river and a festive track on the radio.
+const SECRETS = ['t,e,t', 'ArrowUp,ArrowUp,ArrowDown,ArrowDown,ArrowLeft,ArrowRight,ArrowLeft,ArrowRight,b,a'];
+let typed = [];
+function celebrate() {
+  document.querySelector('.hero').scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
+  dispatchEvent(new CustomEvent('festival'));
+  player.playFestive();
+  document.querySelector('.toast')?.remove();
+  document.body.insertAdjacentHTML(
+    'beforeend',
+    '<p class="toast" role="status"><span class="toast__ja">明けましておめでとう</span>Happy Tet! Wishing you a lucky new year</p>',
+  );
+  setTimeout(() => document.querySelector('.toast')?.remove(), 6000);
+}
+addEventListener('keydown', (e) => {
+  if (e.target.closest('input, textarea, [contenteditable]') || (e.key.length > 1 && !e.key.startsWith('Arrow'))) return;
+  typed = [...typed, e.key.length === 1 ? e.key.toLowerCase() : e.key].slice(-10);
+  if (SECRETS.some((code) => typed.join(',').endsWith(code))) {
+    typed = [];
+    celebrate();
+  }
+});
+document.querySelector('[data-festival]').addEventListener('click', celebrate);

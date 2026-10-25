@@ -67,6 +67,211 @@ img {
   outline-offset: 3px;
 }
 
+/* Red controls need a contrasting focus ring. */
+.btn--red:focus-visible,
+.nav__links a.is-active:focus-visible {
+  outline-color: var(--ink);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.skip {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 200;
+  padding: 8px 14px;
+  font-family: var(--font-label);
+  font-size: 12px;
+  text-decoration: none;
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-160%);
+}
+
+.skip:focus-visible {
+  transform: none;
+}
+
+main:focus {
+  outline: none;
+}
+
+/* ---------- welcome screen ---------- */
+
+.intro {
+  display: none;
+}
+
+.js:not(.intro-seen) .intro {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(240, 165, 49, 0.22), transparent 38%),
+    var(--paper);
+  transition: opacity 0.6s ease, visibility 0.6s;
+  /* Safety net: hide even if the script never runs. */
+  animation: intro-out 0.6s 5s forwards;
+}
+
+@keyframes intro-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.intro.is-done {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.intro__lantern {
+  margin-bottom: 10px;
+  transform-origin: 50% 0;
+  filter: drop-shadow(0 0 0 rgba(255, 140, 60, 0));
+  animation: swing 1.8s ease-in-out infinite alternate, lantern-light 1.1s ease-out forwards;
+}
+
+.intro__ja {
+  font-size: 28px;
+  letter-spacing: 0.3em;
+  color: var(--red);
+  animation: rise 0.6s 0.2s ease-out both;
+}
+
+.intro__domain {
+  font-family: var(--font-label);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: var(--ink-soft);
+  animation: rise 0.6s 0.35s ease-out both;
+}
+
+.intro__bar {
+  width: 120px;
+  height: 8px;
+  margin-top: 8px;
+  padding: 1px;
+  border: 2px solid var(--ink);
+}
+
+.intro__bar i {
+  display: block;
+  height: 100%;
+  background: repeating-linear-gradient(90deg, var(--red) 0 6px, transparent 6px 8px);
+  animation: fill-bar 1.1s steps(14) forwards;
+}
+
+@keyframes lantern-light {
+  to {
+    filter: drop-shadow(0 0 18px rgba(255, 140, 60, 0.75));
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes fill-bar {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* ---------- Tet easter egg ---------- */
+
+.toast {
+  position: fixed;
+  top: 84px;
+  left: 50%;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 22px;
+  font-family: var(--font-label);
+  font-size: 13px;
+  color: #fff4d6;
+  text-align: center;
+  background: var(--red);
+  border: 2px solid var(--ink);
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+  animation: toast 6s ease both;
+}
+
+.toast__ja {
+  font-family: var(--font-body);
+  font-size: 18px;
+  color: var(--gold);
+}
+
+@keyframes toast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -12px);
+  }
+  8%,
+  88% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.footer__egg {
+  display: block;
+  margin: 10px auto 0;
+  padding: 2px 8px;
+  font-family: 'Yomogi', var(--font-body);
+  font-size: 14px;
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+  opacity: 0.7;
+}
+
+.footer__egg:hover {
+  opacity: 1;
+  color: var(--red);
+}
+
+.footer__egg kbd {
+  margin: 0 1px;
+  padding: 0 5px;
+  font-family: var(--font-label);
+  font-size: 11px;
+  border: 1px solid currentColor;
+  border-bottom-width: 2px;
+}
+
+.hero__scene canvas.is-hot {
+  cursor: pointer;
+}
+
 #petals {
   position: fixed;
   inset: 0;
@@ -180,6 +385,40 @@ img {
   border: 2px solid var(--ink);
   box-shadow: var(--shadow-sm);
   transition: transform 0.08s steps(2), box-shadow 0.08s steps(2);
+}
+
+/* Pixel icons are drawn at 1x on their own grid; heights stay near that so pixels stay crisp. */
+.pxi {
+  flex: none;
+  width: auto;
+  height: 20px;
+  image-rendering: pixelated;
+}
+
+.btn--sm .pxi,
+.mini-btn .pxi {
+  height: 16px;
+}
+
+.mini-btn .pxi,
+.footer__egg .pxi {
+  margin: -4px 5px -4px 0;
+  vertical-align: middle;
+}
+
+.footer__egg .pxi {
+  margin-left: 4px;
+}
+
+.pxi--brand {
+  height: 14px;
+  padding: 1px;
+  background: var(--white);
+  image-rendering: auto;
+}
+
+.btn--sm .pxi--brand {
+  height: 14px;
 }
 
 .btn:hover {
@@ -427,6 +666,8 @@ img {
 
 .nav__clock {
   display: inline-flex;
+  color: inherit;
+  line-height: inherit;
   align-items: center;
   gap: 7px;
   padding: 3px 10px;
@@ -920,9 +1161,9 @@ img {
   margin-bottom: 12px;
 }
 
-.exp-card__icon {
-  font-size: 22px;
-  line-height: 1;
+.exp-card__icon .pxi {
+  display: block;
+  height: 48px;
 }
 
 .exp-card h4 {
@@ -1841,6 +2082,21 @@ img {
   .panel__level {
     margin-left: 0;
   }
+
+  /* Long labels wrap inside the card, and the footer clears the collapsed player. */
+  .transmit .btn {
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .section--contact {
+    padding-bottom: 150px;
+  }
+
+  .prop--koi {
+    display: none;
+  }
 }
 
 /* ---------- japanese decoration ---------- */
@@ -2234,7 +2490,8 @@ img {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .prop {
+  .prop,
+  .toast {
     animation: none;
   }
 

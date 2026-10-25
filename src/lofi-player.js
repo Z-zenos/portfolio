@@ -32,6 +32,17 @@ const TRACKS = [
     rain: false,
     seed: 99,
   },
+  {
+    title: 'Tet Spring',
+    titleJa: 'テトの春',
+    bpm: 92,
+    key: 60,
+    chords: [[0, 4, 7, 12], [-3, 0, 4, 9], [-7, -3, 0, 5], [-5, -1, 2, 7]],
+    scale: [0, 2, 4, 7, 9, 12, 14],
+    rain: false,
+    festive: true,
+    seed: 2026,
+  },
 ];
 
 const VOLUMES = { low: 0.25, med: 0.5, high: 0.8 };
@@ -120,6 +131,12 @@ class LofiEngine {
   skip(direction) {
     this.trackIndex = (this.trackIndex + direction + TRACKS.length) % TRACKS.length;
     if (this.playing) this.loadTrack();
+  }
+
+  select(index) {
+    this.trackIndex = index;
+    if (this.playing) this.loadTrack();
+    else this.start();
   }
 
   // Frequency bins (0-255) for the visualizer, or null before audio starts.
@@ -347,4 +364,12 @@ export function mountPlayer(root) {
   }
   render();
   drawViz();
+
+  return {
+    playFestive() {
+      engine.select(TRACKS.findIndex((t) => t.festive));
+      render();
+      if (!raf) drawViz();
+    },
+  };
 }

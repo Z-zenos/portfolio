@@ -77,11 +77,11 @@ export const profile = {
   },
 
   expertise: [
-    // EDIT
-    { icon: '⚡', tag: 'Python / FastAPI', color: 'red', title: 'Backend & APIs', text: 'Scalable REST and async APIs, background jobs, and clean service boundaries.' },
-    { icon: '🖥', tag: 'React / TS', color: 'navy', title: 'Modern Web Apps', text: 'Fast, accessible interfaces with React and TypeScript, from dashboards to playful sites.' },
-    { icon: '⏱', tag: 'Postgres / Redis', color: 'green', title: 'Data & Performance', text: 'Schema design, query tuning, caching and indexing for systems that stay quick under load.' },
-    { icon: '🏮', tag: 'Canvas / Pixel', color: 'gold', title: 'Creative Coding', text: 'Pixel art scenes, generative audio and small animated worlds rendered in the browser.' },
+    // EDIT: icon is a file name in assets/icons (bolt, monitor, stopwatch, lantern, dice, mail, scroll, lixi)
+    { icon: 'bolt', tag: 'Python / FastAPI', color: 'red', title: 'Backend & APIs', text: 'Scalable REST and async APIs, background jobs, and clean service boundaries.' },
+    { icon: 'monitor', tag: 'React / TS', color: 'navy', title: 'Modern Web Apps', text: 'Fast, accessible interfaces with React and TypeScript, from dashboards to playful sites.' },
+    { icon: 'stopwatch', tag: 'Postgres / Redis', color: 'green', title: 'Data & Performance', text: 'Schema design, query tuning, caching and indexing for systems that stay quick under load.' },
+    { icon: 'lantern', tag: 'Canvas / Pixel', color: 'gold', title: 'Creative Coding', text: 'Pixel art scenes, generative audio and small animated worlds rendered in the browser.' },
   ],
 
   quests: [
