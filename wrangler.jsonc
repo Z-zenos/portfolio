@@ -4,6 +4,9 @@
   "$schema": "https://unpkg.com/wrangler@4.147.0/config-schema.json",
   "name": "portfolio",
   "compatibility_date": "2026-10-01",
+  // Keep the workers.dev URL and per-branch preview URLs on across deploys.
+  "workers_dev": true,
+  "preview_urls": true,
   "assets": {
     "directory": ".",
     // /blog/<slug>/ serves blog/<slug>/index.html.
