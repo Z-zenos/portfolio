@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lab · Hoang Anh Tuan</title>
+    <meta name="description" content="Small things I build to learn: interactive study tools, cheatsheets and experiments." />
+    <meta name="theme-color" content="#fbf8f0" />
+    <link rel="canonical" href="https://tuanha.dev/lab/" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/assets/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tuanha.dev/lab/" />
+    <meta property="og:site_name" content="tuanha.dev" />
+    <meta property="og:title" content="Lab · Hoang Anh Tuan" />
+    <meta property="og:description" content="Small things I build to learn: interactive study tools, cheatsheets and experiments." />
+    <meta property="og:image" content="https://tuanha.dev/assets/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&family=Yomogi&family=Be+Vietnam+Pro:ital,wght@0,400;0,600;1,400&display=swap"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/lab/lab.css" />
+    <script>
+      document.documentElement.classList.add('js', 'intro-seen');
+      // Theme: the visitor's saved choice, otherwise the system setting. Set before first paint.
+      try {
+        const saved = localStorage.getItem('theme');
+        document.documentElement.dataset.theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      } catch {
+        document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+    </script>
+    <script type="module" src="/src/lab.js"></script>
+  </head>
+  <body class="blog">
+    <a class="skip" href="#main">Skip to content</a>
+    <canvas id="petals" aria-hidden="true"></canvas>
+    <header class="nav" data-nav></header>
+    <main id="main" tabindex="-1">
+      <section class="section lab-index" data-kanji="研">
+        <div class="wrap">
+          <header class="bench">
+            <div class="bench__text">
+              <p class="sec-head__chapter"><span class="tile tile--red">研</span>「 第六章 • 研究室 」</p>
+              <h1 class="bench__title">Lab</h1>
+              <p class="bench__sub">Interactive tools I build to learn: cheatsheets, study decks and small experiments.</p>
+            </div>
+            <div class="bench__term" aria-hidden="true">
+              <p><span class="bench__prompt">$</span> ls ~/lab</p>
+              <p class="bench__out" data-lab-count></p>
+              <p><span class="bench__prompt">$</span> <span class="bench__caret"></span></p>
+            </div>
+          </header>
+          <ul class="shelf" data-labs></ul>
+        </div>
+      </section>
+    </main>
+    <footer class="blog-foot">
+      <p class="footer"><span class="tile tile--red tile--xs">印</span>© 2026 Hoang Anh Tuan · <a href="/">tuanha.dev</a></p>
+    </footer>
+  </body>
+</html>

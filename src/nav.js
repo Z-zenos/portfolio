@@ -8,6 +8,7 @@ const LINKS = [
   ['/#exp', '歴', 'Exp'],
   ['/#work', '術', 'Work'],
   ['/blog/', '記', 'Blog'],
+  ['/lab/', '研', 'Lab'],
   ['/#contact', '結', 'Contact'],
 ];
 

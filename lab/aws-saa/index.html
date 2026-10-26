@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sổ tay AWS SAA-C03 · Lab · Hoang Anh Tuan</title>
+    <meta name="description" content="Sổ tay ôn thi AWS Solutions Architect Associate (SAA-C03): 14 nhóm kiến thức, cây quyết định, cặp service dễ nhầm, flashcard lặp lại ngắt quãng và bản đồ liên kết service." />
+    <meta name="theme-color" content="#fbf8f0" />
+    <link rel="canonical" href="https://tuanha.dev/lab/aws-saa/" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/assets/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tuanha.dev/lab/aws-saa/" />
+    <meta property="og:site_name" content="tuanha.dev" />
+    <meta property="og:title" content="Sổ tay AWS SAA-C03 · tuanha.dev" />
+    <meta property="og:description" content="14 nhóm kiến thức, cây quyết định, cặp service dễ nhầm, 1.084 flashcard và bản đồ liên kết service." />
+    <meta property="og:image" content="https://tuanha.dev/assets/lab/aws-saa/cover.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&family=Be+Vietnam+Pro:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/lab/lab.css" />
+    <script>
+      document.documentElement.classList.add('js', 'intro-seen');
+      // Theme: the visitor's saved choice, otherwise the system setting. Set before first paint.
+      try {
+        const saved = localStorage.getItem('theme');
+        document.documentElement.dataset.theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      } catch {
+        document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+    </script>
+    <link rel="preload" href="/lab/aws-saa/data.json" as="fetch" crossorigin />
+    <script type="module" src="/src/aws-saa.js"></script>
+  </head>
+  <body class="blog dojo-page">
+    <a class="skip" href="#main">Skip to content</a>
+    <canvas id="petals" aria-hidden="true"></canvas>
+    <header class="nav" data-nav></header>
+    <main id="main" class="dojo" lang="vi" tabindex="-1">
+      <header class="dojo-hero">
+        <figure class="dojo-hero__art">
+          <img src="/assets/lab/aws-saa/cover.png" alt="Phòng học trong nhà cổ Hội An, cửa sổ tròn nhìn ra những đám mây chở máy chủ" width="334" height="188" />
+          <span class="dojo-hero__glow" aria-hidden="true"></span>
+          <span class="twinkle" style="--x: 62%; --y: 14%" aria-hidden="true"></span>
+          <span class="twinkle" style="--x: 78%; --y: 26%; --d: 0.8s" aria-hidden="true"></span>
+          <span class="twinkle" style="--x: 48%; --y: 30%; --d: 1.6s" aria-hidden="true"></span>
+          <span class="twinkle" style="--x: 86%; --y: 10%; --d: 2.3s" aria-hidden="true"></span>
+        </figure>
+        <div class="dojo-hero__text">
+          <a class="post__back" href="/lab/">← Lab</a>
+          <p class="sec-head__chapter"><span class="tile tile--red">雲</span>「 実験 01 • 雲の道場 」</p>
+          <h1 class="dojo-hero__title">Sổ tay AWS <span>SAA-C03</span></h1>
+          <p class="dojo-hero__lede">
+            Kiến thức thi Solutions Architect Associate gom thành một võ đường: tra cứu theo nhóm, đi cây quyết định, phân biệt service dễ nhầm, luyện flashcard
+            lặp lại ngắt quãng và lần theo đường nối giữa các service.
+          </p>
+          <dl class="dojo-counts" data-counts></dl>
+          <section class="status" aria-label="Tiến độ học">
+            <p class="status__head"><span class="px-en">Status</span><span class="status__ja">状態</span><span class="status__note" data-sync>Lưu trên trình duyệt này</span></p>
+            <div class="status__rows" data-status></div>
+          </section>
+        </div>
+      </header>
+
+      <nav class="modes" role="tablist" aria-label="Chế độ học" data-modes></nav>
+      <div class="realms" data-realms aria-label="Lọc theo nhóm kiến thức"></div>
+
+      <div class="dojo-load" data-load>
+        <p class="dojo-load__text">Đang mở cuộn sổ tay…</p>
+        <div class="dojo-load__bar"><i></i></div>
+      </div>
+
+      <section class="view" id="view-map" role="tabpanel" aria-labelledby="tab-map" hidden>
+        <div class="view-head">
+          <h2 class="view-head__title"><span class="px-en">Atlas</span> Bách khoa service</h2>
+          <p class="view-head__lede">Mỗi service theo cùng một khung: Use case, Key features, Architecture, Trade-off, Dễ nhầm với, Tín hiệu đề thi. Sao vàng = mức độ hay ra đề.</p>
+        </div>
+        <div class="toolbar">
+          <label class="search"><span class="sr-only">Tìm service</span><input type="search" id="map-search" placeholder="Tìm: Aurora, VPC endpoint, 15 phút…" autocomplete="off" /></label>
+          <button type="button" class="btn btn--sm" id="mm-toggle" aria-expanded="false">Mindmap</button>
+        </div>
+        <div class="mindmap" id="mindmap" hidden>
+          <div class="toolbar toolbar--tight">
+            <button type="button" class="btn btn--sm" data-mm="1">Chỉ nhóm</button>
+            <button type="button" class="btn btn--sm" data-mm="2">Hiện service</button>
+            <button type="button" class="btn btn--sm" data-mm="3">Hiện các mục</button>
+            <button type="button" class="btn btn--sm" data-mm="99">Mở hết</button>
+            <button type="button" class="btn btn--sm" data-mm="fit">Vừa khung</button>
+          </div>
+          <div class="frame frame--map">
+            <svg id="mm" aria-label="Mindmap kiến thức"></svg>
+            <p class="frame__hint">Bấm vòng tròn để mở/đóng nhánh · kéo để di chuyển · cuộn để zoom</p>
+          </div>
+        </div>
+        <div id="codex"></div>
+        <h2 class="subhead"><span class="tile tile--navy tile--xs">読</span>Tài liệu chính thức nên đọc</h2>
+        <div class="reading" id="reading"></div>
+      </section>
+
+      <section class="view" id="view-trees" role="tabpanel" aria-labelledby="tab-trees" hidden>
+        <div class="view-head">
+          <h2 class="view-head__title"><span class="px-en">Crossroads</span> Cây quyết định</h2>
+          <p class="view-head__lede">Đọc yêu cầu của đề, trả lời từng câu để đi tới service đúng. Tự đoán trong đầu trước khi chọn. Phím 1–4 để chọn, Backspace để lùi.</p>
+        </div>
+        <div class="trees">
+          <ol class="quest-list" id="tree-list"></ol>
+          <div class="walker" id="walker" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-vs" role="tabpanel" aria-labelledby="tab-vs" hidden>
+        <div class="view-head">
+          <h2 class="view-head__title"><span class="px-en">Versus</span> Cặp dễ nhầm</h2>
+          <p class="view-head__lede">Bật "Tự kiểm tra" để che điểm phân biệt và mẹo nhớ, tự nói câu trả lời rồi bấm để lật.</p>
+        </div>
+        <div class="toolbar">
+          <label class="search"><span class="sr-only">Tìm cặp service</span><input type="search" id="vs-search" placeholder="Tìm: SQS, KMS, Fargate…" autocomplete="off" /></label>
+          <label class="switch"><input type="checkbox" id="vs-quiz" /><span class="switch__box" aria-hidden="true"></span>Tự kiểm tra</label>
+        </div>
+        <div class="pairs" id="pairs"></div>
+        <div id="group-compare"></div>
+        <h2 class="subhead"><span class="tile tile--red tile--xs">罠</span>Bẫy thường gặp</h2>
+        <div class="traps" id="traps"></div>
+      </section>
+
+      <section class="view" id="view-cards" role="tabpanel" aria-labelledby="tab-cards" hidden>
+        <div class="view-head">
+          <h2 class="view-head__title"><span class="px-en">Flashcards</span> Luyện thẻ</h2>
+          <p class="view-head__lede">Lặp lại ngắt quãng theo hộp Leitner: thẻ nhớ tốt quay lại sau 1, 3, 7, 14, 30 rồi 60 ngày; thẻ quên quay lại ngay.</p>
+        </div>
+        <div class="toolbar">
+          <label class="select"
+            ><span class="sr-only">Loại thẻ</span
+            ><select id="deck-kind">
+              <option value="all">Mọi loại thẻ</option>
+              <option value="signal">Tín hiệu đề → chọn gì</option>
+              <option value="keyword">Keyword → lựa chọn thắng</option>
+              <option value="fact">Điền số liệu</option>
+              <option value="vs">Phân biệt A vs B</option>
+              <option value="trap">Bẫy</option>
+              <option value="pattern">Pattern kiến trúc</option>
+            </select></label
+          >
+          <label class="select"
+            >Thẻ mới mỗi ngày
+            <select id="new-limit">
+              <option>10</option>
+              <option selected>20</option>
+              <option>40</option>
+              <option>80</option>
+            </select></label
+          >
+        </div>
+        <div class="card-stage" id="card-stage"></div>
+        <p class="keys"><kbd>Space</kbd> lật thẻ · <kbd>1</kbd> Quên · <kbd>2</kbd> Khó · <kbd>3</kbd> Nhớ · <kbd>4</kbd> Dễ</p>
+        <h2 class="subhead"><span class="tile tile--green tile--xs">進</span>Tiến độ theo nhóm</h2>
+        <div class="progress-grid" id="progress"></div>
+      </section>
+
+      <section class="view" id="view-facts" role="tabpanel" aria-labelledby="tab-facts" hidden>
+        <div class="view-head">
+          <h2 class="view-head__title"><span class="px-en">Numbers</span> Số liệu phải thuộc</h2>
+          <p class="view-head__lede">Checklist ghi nhớ của từng nhóm: con số, giới hạn và quy tắc. Bật "Che số" để tự kiểm tra, bấm vào miếng che để xem.</p>
+        </div>
+        <div class="toolbar">
+          <label class="search"><span class="sr-only">Tìm số liệu</span><input type="search" id="facts-search" placeholder="Tìm: IOPS, 15 phút, retention…" autocomplete="off" /></label>
+          <label class="switch"><input type="checkbox" id="facts-cover" /><span class="switch__box" aria-hidden="true"></span>Che số</label>
+        </div>
+        <div class="facts" id="facts"></div>
+      </section>
+
+      <section class="view" id="view-links" role="tabpanel" aria-labelledby="tab-links" hidden>
+        <div class="view-head">
+          <h2 class="view-head__title"><span class="px-en">Threads</span> Liên kết service</h2>
+          <p class="view-head__lede">Service nào đi cùng service nào, dữ liệu chảy ra sao, và chúng cùng giải bài toán nào. Bấm một service để xem quan hệ, bấm một bài toán để xem chuỗi giải pháp.</p>
+        </div>
+        <div class="toolbar">
+          <label class="search"
+            ><span class="sr-only">Tìm service</span><input type="search" id="link-search" list="link-names" placeholder="Tìm service: SQS, Transit Gateway…" autocomplete="off"
+          /></label>
+          <datalist id="link-names"></datalist>
+          <label class="switch"><input type="checkbox" id="lt-flow" checked /><span class="switch__box switch__box--flow" aria-hidden="true"></span>Luồng</label>
+          <label class="switch"><input type="checkbox" id="lt-with" checked /><span class="switch__box switch__box--with" aria-hidden="true"></span>Kết hợp</label>
+          <label class="switch"><input type="checkbox" id="lt-confusable" /><span class="switch__box switch__box--conf" aria-hidden="true"></span>Dễ nhầm</label>
+          <label class="select"
+            >Độ mạnh ≥
+            <select id="link-min">
+              <option>1</option>
+              <option selected>2</option>
+              <option>3</option>
+              <option>5</option>
+            </select></label
+          >
+          <button type="button" class="btn btn--sm" id="link-reset">Toàn cảnh</button>
+        </div>
+        <div class="links">
+          <div class="frame frame--graph">
+            <svg id="graph" aria-label="Bản đồ liên kết service"></svg>
+            <div class="legend"><span><i class="flow"></i>Luồng dữ liệu</span><span><i class="with"></i>Dùng kết hợp</span><span><i class="confusable"></i>Dễ nhầm</span></div>
+          </div>
+          <aside class="panel" id="link-panel"></aside>
+        </div>
+      </section>
+    </main>
+    <footer class="blog-foot">
+      <p class="footer"><span class="tile tile--red tile--xs">印</span>© 2026 Hoang Anh Tuan · <a href="/">tuanha.dev</a></p>
+    </footer>
+  </body>
+</html>

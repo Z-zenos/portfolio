@@ -26,6 +26,10 @@ python3 -m http.server 5173
 
 `/blog/` lists the posts in `src/posts.js` (newest first; `soon: true` shows a coming-soon card, `lang: 'vi'` marks a Vietnamese post, which uses Be Vietnam Pro and VT323 because the pixel fonts have no Vietnamese diacritics). Each published post is a static page at `blog/<slug>/index.html` that loads `src/blog.js` for the shared navbar, petals and prev/next links. Images live in `assets/blog/<slug>/`: `cover.png` plus section illustrations, all pixel art shipped at native size and scaled up with `image-rendering: pixelated`; `cover.jpg` is the link preview.
 
+## Lab
+
+`/lab/` lists the experiments in `src/labs.js` (rendered by `src/lab.js` as game cartridges on a shelf, under a workbench header with a small terminal). The first one is the AWS SAA-C03 study dojo at `lab/aws-saa/` (Vietnamese): a codex of the 14 knowledge groups with a markmap mindmap, decision trees as RPG dialogues, A vs B duel cards with a self-quiz cover, Leitner flashcards (progress in localStorage under `saa.*`), the numbers checklist and a d3 graph of how services connect. Its content comes from the AWSSAAHUB study pack (`node scripts/study/build-study-pack.ts`): `lab/aws-saa/data.json` holds what the page reads on load, and `graph.json` (edges and problems) loads with d3 only when the link view opens; d3 and markmap are fetched on demand too. Lab-only styles live in `lab/lab.css`. `_headers` sets cache lifetimes for Cloudflare. Pixel art (cover, 16 group icons, 6 mode icons and one icon per AWS service in `services/`, drawn from the motifs in `assets/raw/lab/service-motifs.json`) is in `assets/lab/aws-saa/`, generated with Codex on magenta, keyed and downscaled NEAREST; sources are in `assets/raw/lab/`.
+
 ## Editing content
 
 All text lives in `src/profile.js` (values marked `EDIT`): name, katakana name, roles,
@@ -35,6 +39,8 @@ stats, story, expertise, quests (experience), skills, projects and links.
 
 - `src/profile.js`: content
 - `src/sections.js`: renders each section from the content
+- `src/labs.js`, `src/lab.js`: the lab list and the /lab/ page
+- `src/aws-saa.js`: the AWS SAA-C03 study dojo (`lab/aws-saa/`)
 - `src/nav.js`: the navbar shared by every page (links, Vietnam clock and day/night, theme toggle, mobile menu)
 - `src/main.js`: wiring (typewriter, quest log, skill filters, vitals roll, section highlight in the nav, welcome screen, Tet easter egg)
 - `src/scene.js`: hero effects on top of `assets/hero.png` (night sky, clicks, river ripples, fireworks)

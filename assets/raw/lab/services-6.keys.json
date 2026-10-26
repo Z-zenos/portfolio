@@ -1,0 +1,1 @@
+["config", "control-tower", "cost-anomaly-detection", "cost-explorer", "data-exchange", "database-migration-service", "datasync", "direct-connect", "directory-service", "ec2-instance-store", "efa", "elastic-beanstalk", "elastic-disaster-recovery", "elastic-load-balancing", "fargate", "firewall-manager"]

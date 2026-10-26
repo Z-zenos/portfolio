@@ -4,4 +4,5 @@ node_modules/
 assets/raw/*.out
 assets/raw/*.log
 assets/raw/blog/
+assets/raw/lab/*.log
 .wrangler/
