@@ -1,0 +1,7 @@
+# Cloudflare static-asset headers. File names are not content-hashed, so cache lifetimes stay
+# short and stale-while-revalidate keeps repeat visits instant while a new deploy propagates.
+/assets/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/lab/aws-saa/*.json
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
