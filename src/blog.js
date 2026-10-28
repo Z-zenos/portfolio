@@ -1,4 +1,5 @@
 // Blog pages: shared navbar and petals, the post list on /blog/ and prev/next links on a post.
+import { highlightCode } from './code-highlight.js';
 import { mountNav } from './nav.js';
 import { mountPlayer } from './lofi-player.js';
 import { mountPetals } from './petals.js';
@@ -59,3 +60,5 @@ if (slug && pager) {
     post ? `<a class="pager__link pager__link--${dir}" href="/blog/${post.slug}/"><small>${dir === 'newer' ? '← Newer' : 'Older →'}</small>${esc(post.title)}</a>` : '<span></span>';
   pager.innerHTML = link(published[i - 1], 'newer') + link(published[i + 1], 'older');
 }
+
+highlightCode();

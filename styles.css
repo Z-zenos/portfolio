@@ -3578,6 +3578,51 @@ html[lang='vi'] .post__body th {
   letter-spacing: 0;
 }
 
+/* Syntax colours from the site palette, tuned for the dark code panel. */
+.hljs-comment,
+.hljs-quote {
+  color: #8f8a7e;
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-built_in,
+.hljs-literal,
+.hljs-type {
+  color: #ff7a6b;
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-template-tag,
+.hljs-template-variable {
+  color: #9fd88a;
+}
+
+.hljs-number,
+.hljs-symbol {
+  color: #f6c75a;
+}
+
+.hljs-title,
+.hljs-title.function_,
+.hljs-section {
+  color: #8fb8ff;
+}
+
+.hljs-attr,
+.hljs-attribute,
+.hljs-property,
+.hljs-variable,
+.hljs-params {
+  color: #e9e3d2;
+}
+
+.hljs-meta,
+.hljs-operator {
+  color: #e2a3c7;
+}
+
 .post__body .table-scroll {
   overflow-x: auto;
 }
