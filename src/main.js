@@ -9,10 +9,10 @@ import { mountNav } from './nav.js';
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 renderSections();
+const player = mountPlayer();
 mountDecor();
 mountScene(document.querySelector('#scene'), { reducedMotion });
 if (!reducedMotion) mountPetals(document.querySelector('#petals'));
-const player = mountPlayer(document.querySelector('#player'));
 
 // Typewriter cycling through roles in the hero.
 function typewriter(el, words) {

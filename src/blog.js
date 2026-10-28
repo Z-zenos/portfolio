@@ -1,5 +1,6 @@
 // Blog pages: shared navbar and petals, the post list on /blog/ and prev/next links on a post.
 import { mountNav } from './nav.js';
+import { mountPlayer } from './lofi-player.js';
 import { mountPetals } from './petals.js';
 import { POSTS } from './posts.js';
 
@@ -7,6 +8,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 mountNav({ current: '/blog/' });
+mountPlayer();
 if (!matchMedia('(prefers-reduced-motion: reduce)').matches) mountPetals(document.querySelector('#petals'));
 
 // A tear-off calendar page (日めくり) for the post date.

@@ -290,8 +290,70 @@ class LofiEngine {
   }
 }
 
-export function mountPlayer(root) {
+const TEMPLATE = `
+  <span class="player__tape" aria-hidden="true"></span>
+  <div class="player__bar">
+    <span class="player__brand"><span class="player__radio">ラジオ</span>Vietnamese Lo-fi</span>
+    <span class="player__live"><span class="player__led"></span><span data-status>PAUSED</span></span>
+    <button type="button" class="player__min" data-minimize aria-expanded="true" aria-label="Minimize player"></button>
+  </div>
+  <div class="player__body">
+    <div class="player__art" aria-hidden="true">
+      <img class="player__album" src="/assets/player/album.png" alt="" />
+      <img class="player__cat" src="/assets/player/cat.png" alt="" />
+    </div>
+    <div class="player__main">
+      <p class="player__title" data-title>Hoi An Dusk</p>
+      <p class="player__ja" data-title-ja>会安の夕暮れ</p>
+      <canvas class="player__viz" data-viz width="98" height="16" aria-hidden="true"></canvas>
+      <div class="player__controls">
+        <button type="button" class="pbtn" data-skip="-1" aria-label="Previous track"><span class="pi pi--prev"></span></button>
+        <button type="button" class="pbtn pbtn--play" data-play>PLAY</button>
+        <button type="button" class="pbtn" data-skip="1" aria-label="Next track"><span class="pi pi--next"></span></button>
+      </div>
+    </div>
+  </div>
+  <div class="player__foot">
+    <div class="vol" role="group" aria-label="Volume">
+      <span class="vol__label">VOL</span>
+      <button type="button" data-volume="low" aria-label="Low volume"></button>
+      <button type="button" data-volume="med" aria-label="Medium volume"></button>
+      <button type="button" data-volume="high" aria-label="High volume"></button>
+    </div>
+    <span class="player__dots" data-dots aria-hidden="true"></span>
+  </div>
+`;
+
+// The player lives on every page; its state is carried across page loads so music can pick up
+// where it left off. Browsers block audio until a gesture, so playback resumes on the first one.
+const STATE_KEY = 'lofi-player';
+
+function loadState() {
+  try {
+    return JSON.parse(sessionStorage.getItem(STATE_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveState(state) {
+  try {
+    sessionStorage.setItem(STATE_KEY, JSON.stringify(state));
+  } catch {}
+}
+
+export function mountPlayer() {
+  const root = document.createElement('aside');
+  root.id = 'player';
+  root.className = 'player';
+  root.setAttribute('aria-label', 'Lo-fi music player');
+  root.innerHTML = TEMPLATE;
+  document.body.append(root);
+
   const engine = new LofiEngine();
+  const saved = loadState();
+  if (TRACKS[saved.track]) engine.trackIndex = saved.track;
+  if (VOLUMES[saved.volume]) engine.volume = saved.volume;
   const q = (sel) => root.querySelector(sel);
   const status = q('[data-status]');
   const title = q('[data-title]');
@@ -307,6 +369,7 @@ export function mountPlayer(root) {
   dots.innerHTML = TRACKS.map(() => '<i></i>').join('');
 
   function render() {
+    saveState({ track: engine.trackIndex, volume: engine.volume, playing: engine.playing, mini: root.classList.contains('is-mini') });
     root.classList.toggle('is-playing', engine.playing);
     status.textContent = engine.playing ? 'LIVE' : 'PAUSED';
     title.textContent = engine.track.title;
@@ -353,16 +416,32 @@ export function mountPlayer(root) {
       render();
     }),
   );
-  q('[data-minimize]').addEventListener('click', () => {
-    const mini = root.classList.toggle('is-mini');
+  function setMini(mini) {
+    root.classList.toggle('is-mini', mini);
     q('[data-minimize]').setAttribute('aria-expanded', String(!mini));
+  }
+  q('[data-minimize]').addEventListener('click', () => {
+    setMini(!root.classList.contains('is-mini'));
+    render();
   });
   // Small screens start collapsed so the player does not cover the page.
-  if (matchMedia('(max-width: 600px)').matches) {
-    root.classList.add('is-mini');
-    q('[data-minimize]').setAttribute('aria-expanded', 'false');
+  setMini(saved.mini ?? matchMedia('(max-width: 600px)').matches);
+
+  if (saved.playing) {
+    const resume = (e) => {
+      removeEventListener('pointerdown', resume, true);
+      removeEventListener('keydown', resume, true);
+      // A press on the player's own buttons is handled by their listeners.
+      if (engine.playing || root.contains(e.target)) return;
+      engine.start();
+      render();
+      if (!raf) drawViz();
+    };
+    addEventListener('pointerdown', resume, true);
+    addEventListener('keydown', resume, true);
   }
   render();
+  if (saved.playing) saveState({ ...loadState(), playing: true });
   drawViz();
 
   return {

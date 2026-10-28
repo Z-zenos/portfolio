@@ -2,9 +2,11 @@
 // flashcards and the service graph) and renders six modes: codex, decision trees, A vs B,
 // flashcards (Leitner boxes kept in localStorage), numbers and the service link graph.
 import { mountNav } from './nav.js';
+import { mountPlayer } from './lofi-player.js';
 import { mountPetals } from './petals.js';
 
 mountNav({ current: '/lab/' });
+mountPlayer();
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 if (!reduced) mountPetals(document.querySelector('#petals'));
 

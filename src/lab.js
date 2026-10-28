@@ -1,11 +1,13 @@
 // /lab/: shared navbar and petals, and the list of experiments in labs.js.
 import { mountNav } from './nav.js';
+import { mountPlayer } from './lofi-player.js';
 import { mountPetals } from './petals.js';
 import { LABS } from './labs.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 mountNav({ current: '/lab/' });
+mountPlayer();
 if (!matchMedia('(prefers-reduced-motion: reduce)').matches) mountPetals(document.querySelector('#petals'));
 
 // Each experiment is a game cartridge: ridged shell, cover art as the label, gold connector pins.
