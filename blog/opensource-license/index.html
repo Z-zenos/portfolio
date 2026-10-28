@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dùng mã nguồn mở cho sản phẩm thương mại: khi nào phải công khai mã của mình? · Hoang Anh Tuan</title>
+    <meta name="description" content="MIT, MPL, GPL, AGPL và giấy phép phi thương mại, qua một ví dụ thật: chọn thư viện dựng 3D từ ảnh drone mà vẫn giữ kín mã sản phẩm." />
+    <meta name="theme-color" content="#fbf8f0" />
+    <link rel="canonical" href="https://tuanha.dev/blog/opensource-license/" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/assets/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://tuanha.dev/blog/opensource-license/" />
+    <meta property="og:site_name" content="tuanha.dev" />
+    <meta property="og:title" content="Dùng mã nguồn mở cho sản phẩm thương mại: khi nào phải công khai mã của mình? · Hoang Anh Tuan" />
+    <meta property="og:description" content="MIT, MPL, GPL, AGPL và giấy phép phi thương mại, qua một ví dụ thật: chọn thư viện dựng 3D từ ảnh drone mà vẫn giữ kín mã sản phẩm." />
+    <meta property="og:image" content="https://tuanha.dev/assets/blog/opensource-license/cover.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="article:published_time" content="2026-10-28" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&family=Yomogi&family=Be+Vietnam+Pro:ital,wght@0,400;0,600;1,400&display=swap"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <script>
+      document.documentElement.classList.add('js', 'intro-seen');
+      // Theme: the visitor's saved choice, otherwise the system setting. Set before first paint.
+      try {
+        const saved = localStorage.getItem('theme');
+        document.documentElement.dataset.theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      } catch {
+        document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+    </script>
+    <script type="module" src="/src/blog.js"></script>
+  </head>
+  <body class="blog" data-slug="opensource-license">
+    <a class="skip" href="#main">Skip to content</a>
+    <canvas id="petals" aria-hidden="true"></canvas>
+    <header class="nav" data-nav></header>
+    <main id="main" tabindex="-1">
+      <article class="post">
+        <header class="post__head">
+          <a class="post__back" href="/blog/">← Tất cả bài viết</a>
+          <p class="sec-head__chapter"><span class="tile tile--red">記</span>「 ライセンスの境界 」</p>
+          <h1 class="post__title">Dùng mã nguồn mở cho sản phẩm thương mại: khi nào phải công khai mã của mình?</h1>
+          <p class="post__meta"><time datetime="2026-10-28">2026-10-28</time> · 11 phút đọc</p>
+          <ul class="tags"><li>open source</li><li>photogrammetry</li><li>3dgs</li></ul>
+        </header>
+        <figure class="post__cover"><img src="/assets/blog/opensource-license/cover.png" alt="Drone chở các thùng thư viện nhiều màu về xưởng đóng bên cạnh khu vườn mở." width="1200" height="675" /></figure>
+        <div class="post__body">
+<p class="post__lead">“Mã nguồn mở thì cứ thế dùng thôi.” Mình từng nghĩ vậy, cho đến khi phải chọn thư viện dựng mô hình 3D cho một sản phẩm thương mại. Có thư viện cho dùng thoải mái. Có thư viện chỉ cần bạn gửi phần mềm cho khách là bạn phải công bố mã nguồn của chính mình. Có thư viện còn cấm hẳn dùng để kiếm tiền. Bài này kể lại cách mình phân biệt chúng, qua một ví dụ cụ thể: biến ảnh chụp từ drone thành mô hình 3D.</p>
+
+<aside class="lic-tldr" aria-label="Trả lời nhanh">
+<p class="lic-tldr__title">Trả lời nhanh</p>
+<ul>
+<li><strong>Đọc giấy phép thôi chưa đủ.</strong> Bạn còn cần biết mình giao phần mềm cho người dùng theo cách nào: chạy trên server của bạn, hay gửi hẳn bản cài cho họ.</li>
+<li><strong>Đọc giấy phép của thư viện chính cũng chưa đủ.</strong> Một thư viện được dán nhãn thoải mái vẫn có thể kéo theo một thư viện con mang giấy phép khắt khe.</li>
+<li><strong>“Xem được source” không có nghĩa là “được dùng thương mại”.</strong> Một số mã nghiên cứu nổi tiếng chỉ cho phép dùng phi thương mại.</li>
+</ul>
+</aside>
+
+<p>Bối cảnh của mình: người dùng tải ảnh chụp công trình lên, server dựng ra đám mây điểm và mô hình 3D, rồi họ xem kết quả trên trình duyệt. Mình muốn giữ kín mã sản phẩm, nhưng cũng muốn làm đúng nghĩa vụ với những dự án mã nguồn mở mà sản phẩm dựa vào.</p>
+
+<p>Bài này là kinh nghiệm của một kỹ sư, không phải tư vấn pháp lý. Với các trường hợp quan trọng, hãy hỏi luật sư.</p>
+
+<h2>Ba loại công cụ trong một pipeline</h2>
+
+<p>Để biến ảnh thành 3D, cần vài loại công cụ. Chỉ cần nắm sơ qua vai trò của từng loại:</p>
+
+<ul>
+<li><strong>SfM</strong> (Structure from Motion): từ nhiều ảnh chụp chồng lên nhau, tính ra vị trí chụp của từng ảnh và một đám điểm 3D thưa. Đây là bước nền. Ví dụ: COLMAP, OpenSfM.</li>
+<li><strong>MVS</strong> (Multi-View Stereo): dùng kết quả SfM để dựng đám mây điểm dày và mặt lưới (mesh). Ví dụ: OpenMVS.</li>
+<li><strong>3D Gaussian Splatting (3DGS)</strong>: một kỹ thuật mới, tạo ra cảnh 3D trông rất thật để đi lại xem. Nó cũng cần kết quả SfM làm đầu vào. Ví dụ: gsplat.</li>
+</ul>
+
+<p>Mỗi công cụ do một nhóm khác nhau viết và mang một giấy phép khác nhau. Ghép chúng thành một sản phẩm cũng là ghép luôn các giấy phép ấy.</p>
+
+<h2>Năm nhóm giấy phép, từ thoáng đến chặt</h2>
+
+<p>Giấy phép mã nguồn mở có rất nhiều loại, nhưng xét theo câu hỏi “mình có phải công bố mã của mình không?”, có thể chia thành năm nhóm:</p>
+
+<ol class="lic-spectrum" aria-label="Phổ giấy phép từ thoáng đến chặt">
+<li class="lic-card lic-card--green">
+<p class="lic-card__name">Permissive</p>
+<p class="lic-card__eg">MIT, BSD, Apache 2.0</p>
+<p>Dùng, sửa, bán thoải mái. Chỉ cần giữ thông báo bản quyền.</p>
+</li>
+<li class="lic-card lic-card--gold">
+<p class="lic-card__name">Copyleft yếu</p>
+<p class="lic-card__eg">MPL 2.0, LGPL</p>
+<p>Mã của bạn được giữ kín. Phần thư viện (và những chỗ bạn sửa trong đó) phải công khai khi phân phối.</p>
+</li>
+<li class="lic-card lic-card--red">
+<p class="lic-card__name">Copyleft mạnh</p>
+<p class="lic-card__eg">GPL</p>
+<p>Gửi phần mềm cho người khác thì cả chương trình gộp chung phải mở theo GPL.</p>
+</li>
+<li class="lic-card lic-card--red">
+<p class="lic-card__name">Copyleft qua mạng</p>
+<p class="lic-card__eg">AGPL</p>
+<p>Như GPL. Ngoài ra, nếu bạn sửa nó rồi cho người dùng sử dụng qua mạng, bạn cũng phải công khai mã đã sửa.</p>
+</li>
+<li class="lic-card lic-card--ink">
+<p class="lic-card__name">Phi thương mại</p>
+<p class="lic-card__eg">Giấy phép nghiên cứu</p>
+<p>Xem source được, nhưng không được dùng để kiếm tiền nếu chưa xin phép.</p>
+</li>
+</ol>
+
+<p><strong>Permissive</strong> là nhóm dễ chịu nhất. Bạn chỉ cần giữ lại thông báo bản quyền và nội dung giấy phép, thường gom vào một trang “Third-party notices”. Apache 2.0 có thêm hai điểm: phải ghi rõ những file bạn đã sửa và giữ file <code>NOTICE</code> nếu dự án gốc có. Đổi lại, Apache 2.0 trao cho bạn quyền dùng các bằng sáng chế mà người đóng góp có liên quan đến phần họ đóng góp.</p>
+
+<p><strong>Copyleft</strong> là ý tưởng “mã đã mở thì phải giữ mở”. Copyleft <em>yếu</em> chỉ áp dụng cho chính thư viện đó. Với MPL, ranh giới là từng file: file của MPL vẫn là MPL, file bạn tự viết là của bạn. Có một điểm hay bị bỏ qua: khi gửi phần mềm cho người khác, bạn phải cho họ lấy được source của phần MPL, <em>kể cả khi bạn không sửa gì</em>. LGPL thì yêu cầu người nhận phải thay được thư viện LGPL bằng một phiên bản khác.</p>
+
+<p>Copyleft <em>mạnh</em> (GPL) áp dụng cho cả chương trình được ghép lại từ mã GPL và mã của bạn. Đây là nhóm khiến nhiều công ty e ngại. Nhưng như phần tiếp theo cho thấy, GPL chỉ yêu cầu bạn công bố mã khi bạn gửi phần mềm cho người khác.</p>
+
+<h2>Điều quyết định: bạn có gửi phần mềm cho ai không?</h2>
+
+<p>GPL không cấm dùng thương mại. Nghĩa vụ của nó gắn với việc <strong>phân phối</strong>: khi bạn gửi một bản phần mềm cho người khác, họ có quyền nhận cả mã nguồn của nó. Nếu phần mềm chỉ chạy trên server của bạn, còn người dùng chỉ nhận kết quả, thì bạn không gửi bản phần mềm nào cả.</p>
+
+<p>Vì thế, cùng một thư viện nhưng mỗi cách triển khai lại có nghĩa vụ khác nhau:</p>
+
+<div class="table-scroll" role="region" aria-label="Nghĩa vụ theo giấy phép và cách triển khai" tabindex="0">
+<table class="lic-matrix">
+<thead><tr><th>Giấy phép</th><th>Chạy trên server của bạn (SaaS)</th><th>Gửi bản cài cho khách (desktop, Docker on-premise)</th></tr></thead>
+<tbody>
+<tr><td>MIT / BSD / Apache</td><td><span class="lic-chip lic-chip--ok">Thoải mái</span></td><td><span class="lic-chip lic-chip--ok">Kèm thông báo bản quyền</span></td></tr>
+<tr><td>MPL 2.0</td><td><span class="lic-chip lic-chip--ok">Thoải mái</span></td><td><span class="lic-chip lic-chip--warn">Công khai source phần MPL</span></td></tr>
+<tr><td>LGPL</td><td><span class="lic-chip lic-chip--ok">Thoải mái</span></td><td><span class="lic-chip lic-chip--warn">Source thư viện + cho thay thư viện</span></td></tr>
+<tr><td>GPL</td><td><span class="lic-chip lic-chip--ok">Thường không phải công bố</span></td><td><span class="lic-chip lic-chip--bad">Mở cả chương trình gộp chung</span></td></tr>
+<tr><td>AGPL</td><td><span class="lic-chip lic-chip--warn">Nếu đã sửa: công khai bản sửa cho người dùng</span></td><td><span class="lic-chip lic-chip--bad">Như GPL</span></td></tr>
+<tr><td>Phi thương mại</td><td><span class="lic-chip lic-chip--bad">Cần xin phép</span></td><td><span class="lic-chip lic-chip--bad">Cần xin phép</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Hai điều dễ nhầm. Thứ nhất, gửi cho khách một Docker image để họ tự chạy trong mạng nội bộ cũng là <em>phân phối</em>, không phải SaaS. Thứ hai, JavaScript chạy trên trình duyệt cũng đã được gửi tới máy người dùng. Một thư viện GPL nằm trong frontend vì thế khác hẳn một thư viện GPL nằm trên server.</p>
+
+<p>AGPL ra đời để vá đúng chỗ hở “chạy trên server thì không phải công bố” của GPL. Ví dụ, OpenDroneMap (ODM), một pipeline xử lý ảnh drone rất phổ biến, dùng AGPL. Nếu bạn sửa ODM rồi cho khách dùng qua web, bạn phải cho họ lấy được mã của bản đã sửa.</p>
+
+<aside class="callout"><p><strong>Kế hoạch có thể thay đổi.</strong> Một sản phẩm hôm nay chỉ chạy trên cloud, mai có thể có khách đòi cài trong mạng nội bộ. Khi đó, mọi thư viện GPL trước đây “vô hại” trên server phải được xem lại. Nên tính trước tình huống này ngay từ lúc chọn thư viện.</p></aside>
+
+<h2>Cái bẫy nằm ở thư viện con</h2>
+
+<figure class="sketch"><img src="/assets/blog/opensource-license/01.png" alt="Chuỗi mắt xích xanh và vàng, với một mắt xích đỏ được soi qua kính lúp." width="1200" height="800" loading="lazy" /><figcaption>Một mắt xích khác màu là đủ đổi tính chất cả chuỗi.</figcaption></figure>
+
+<p>COLMAP là công cụ SfM được dùng nhiều nhất trong giới nghiên cứu, và hầu hết hướng dẫn 3DGS đều bắt đầu từ nó. Giấy phép của COLMAP là BSD, thuộc nhóm thoáng nhất. Nhìn qua thì có vẻ không có gì phải lo.</p>
+
+<p>Nhưng COLMAP dùng thêm thư viện hình học <strong>CGAL</strong>, và nhiều phần của CGAL mang giấy phép GPL (hoặc giấy phép thương mại trả phí). Giấy phép BSD chỉ áp dụng cho mã do chính nhóm COLMAP viết. Nếu bản COLMAP bạn build có kèm CGAL, thì những gì thực sự nằm trong file chạy gồm cả phần GPL. <a href="https://colmap.github.io/license.html">Trang giấy phép của COLMAP</a> cũng tự nhắc người dùng về điều này.</p>
+
+<p>Tin tốt là CGAL là phần <em>tùy chọn</em>, dù mặc định được bật. COLMAP chỉ cần nó cho một vài thuật toán dựng mesh (Delaunay). Phần SfM tìm vị trí camera không cần CGAL:</p>
+
+<pre><code class="lang-bash"># Build COLMAP không kèm CGAL
+cmake -S . -B build -DCGAL_ENABLED=OFF</code></pre>
+
+<p>Vậy “COLMAP không dùng thương mại được” là kết luận vội. Câu đúng hơn là: <strong>giấy phép của thứ bạn thực sự đóng gói phụ thuộc vào cách bạn build nó.</strong> Bài học này không chỉ đúng với COLMAP. Bạn chọn thư viện A vì nó dùng BSD, A kéo theo B, B kéo theo C, và file cuối cùng chứa cả ba. Gói Python cài sẵn (wheel), thư viện được chép thẳng vào repo hay Docker image cũng có thể mang theo những giấy phép bạn chưa từng đọc.</p>
+
+<p>Một ví dụ nữa: hai công cụ có tên gần giống nhau, hay được dùng cùng nhau, nhưng giấy phép lại khác nhau. OpenMVG dùng MPL 2.0, còn OpenMVS dùng AGPL. Tương tự, OpenSfM dùng BSD, nhưng ODM (có dùng OpenSfM bên trong) lại là AGPL. Thư viện bên trong dùng giấy phép thoáng không làm cả pipeline thoáng theo.</p>
+
+<h2>Mã nghiên cứu: công khai nhưng không miễn phí</h2>
+
+<p>Mã gốc của 3D Gaussian Splatting, do Inria và MPII công bố cùng bài báo, có trên GitHub và ai cũng tải được. Nhưng <a href="https://github.com/graphdeco-inria/gaussian-splatting/blob/main/LICENSE.md">giấy phép của nó</a> chỉ cho phép dùng để nghiên cứu và đánh giá phi thương mại. Muốn dùng thương mại, bạn phải xin phép trước.</p>
+
+<p>Cần tách hai thứ: <em>thuật toán</em> trong bài báo và <em>mã cụ thể</em> mà một nhóm viết ra. <a href="https://github.com/nerfstudio-project/gsplat">gsplat</a> là một bản cài đặt khác của kỹ thuật này, dùng giấy phép Apache 2.0, nên phù hợp hơn cho sản phẩm. Ngược lại, chép vài hàm CUDA từ mã nghiên cứu sang repo của bạn rồi gắn giấy phép khác thì không tạo ra quyền mới.</p>
+
+<h2>Tách công cụ ra tiến trình riêng: giúp được gì?</h2>
+
+<figure class="sketch"><img src="/assets/blog/opensource-license/02.png" alt="Xưởng đóng màu xanh navy và khu vườn mở được nối bằng một cổng nhỏ, một xe chở thùng vàng đi qua." width="1200" height="800" loading="lazy" /><figcaption>Hai bên trao đổi qua một cánh cổng rõ ràng: file vào, file ra.</figcaption></figure>
+
+<p>Một mẹo hay được nhắc tới là đừng <code>import</code> thư viện GPL vào code của mình, mà gọi nó như một chương trình riêng:</p>
+
+<pre><code class="lang-python"># Cách 1: nạp thẳng vào tiến trình của mình, hai bên dùng chung bộ nhớ
+import some_engine
+
+# Cách 2: chạy một chương trình riêng, trao đổi bằng file
+subprocess.run(["engine-cli", "--input", photos_dir, "--output", model_dir], check=True)</code></pre>
+
+<p>Theo <a href="https://www.gnu.org/licenses/gpl-faq.en.html#MereAggregation">giải thích của FSF</a>, hai chương trình chạy riêng và trao đổi qua file, pipe hay command line thường được coi là hai chương trình độc lập. Còn nạp chung vào một tiến trình rồi gọi hàm của nhau thì thường được coi là một chương trình gộp. Cách 2 vì vậy giúp mã của bạn tách khỏi phần GPL.</p>
+
+<p>Nhưng tiến trình riêng <strong>không phải tấm vé miễn trừ</strong>:</p>
+
+<ul>
+<li>Nếu bạn gửi kèm công cụ GPL cho khách, bạn vẫn phải cung cấp source của chính công cụ đó.</li>
+<li>Nếu hai phần trao đổi dữ liệu với nhau quá chặt, như thể một chương trình bị cắt đôi, thì chúng vẫn có thể bị coi là một.</li>
+<li>Giới hạn phi thương mại vẫn còn nguyên, dù bạn đặt mã trong container nào.</li>
+</ul>
+
+<p>Còn một tin vui: <a href="https://www.gnu.org/licenses/gpl-faq.en.html#WhatCaseIsOutputGPL">kết quả do chương trình GPL tạo ra thường không bị GPL</a>. Đám mây điểm dựng từ ảnh của khách vẫn là dữ liệu của khách, dù công cụ xử lý dùng GPL.</p>
+
+<h2>Bảng so sánh các công cụ</h2>
+
+<p>Giấy phép dưới đây được đối chiếu với file LICENSE của từng dự án vào ngày 28-10-2026. Giấy phép có thể đổi theo phiên bản, nên hãy kiểm tra lại đúng phiên bản bạn dùng.</p>
+
+<div class="table-scroll" role="region" aria-label="So sánh công cụ và giấy phép" tabindex="0">
+<table class="lic-engines">
+<thead><tr><th>Công cụ</th><th>Giấy phép</th><th>Làm gì</th><th>Cần để ý</th></tr></thead>
+<tbody>
+<tr><td>OpenSfM</td><td><span class="lic-chip lic-chip--ok">BSD-2</span></td><td>SfM, xuất ra định dạng COLMAP</td><td>Thư viện phụ thuộc</td></tr>
+<tr><td>COLMAP</td><td><span class="lic-chip lic-chip--ok">BSD-3</span></td><td>SfM, MVS, mesh</td><td>CGAL (GPL) nếu bật khi build</td></tr>
+<tr><td>gsplat</td><td><span class="lic-chip lic-chip--ok">Apache 2.0</span></td><td>Huấn luyện 3DGS</td><td>Code ví dụ đi kèm có thể kéo thêm thư viện</td></tr>
+<tr><td>OpenMVG</td><td><span class="lic-chip lic-chip--warn">MPL 2.0</span></td><td>SfM</td><td>Công khai source khi phân phối</td></tr>
+<tr><td>AliceVision / Meshroom</td><td><span class="lic-chip lic-chip--warn">MPL 2.0</span></td><td>SfM, MVS, giao diện dựng 3D</td><td>Như trên</td></tr>
+<tr><td>MicMac</td><td><span class="lic-chip lic-chip--warn">CeCILL-B</span></td><td>Đo ảnh, làm bản đồ</td><td>Một số bản Windows kèm ALGLIB (GPL)</td></tr>
+<tr><td>OpenMVS</td><td><span class="lic-chip lic-chip--bad">AGPL</span></td><td>Đám mây điểm dày, mesh, texture</td><td>Nghĩa vụ cả khi chạy qua mạng</td></tr>
+<tr><td>ODM</td><td><span class="lic-chip lic-chip--bad">AGPL</span></td><td>Pipeline ảnh drone ra bản đồ</td><td>Như trên</td></tr>
+<tr><td>3DGS gốc (Inria)</td><td><span class="lic-chip lic-chip--nc">Phi thương mại</span></td><td>Mã tham chiếu 3DGS</td><td>Cần xin phép</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>CeCILL-B là một giấy phép của Pháp, có tinh thần giống BSD nhưng yêu cầu ghi công rõ ràng hơn. Đừng nhầm với CeCILL-C, một bản khác thuộc nhóm copyleft yếu.</p>
+
+<h2>Pipeline mình chọn để thử</h2>
+
+<p>Ghép các mảnh trên lại, mình chọn hướng: <strong>OpenSfM</strong> (BSD) tính vị trí camera, xuất kết quả sang định dạng file của COLMAP, rồi <strong>gsplat</strong> (Apache 2.0) đọc file đó để huấn luyện 3DGS. Cả hai đều thuộc nhóm thoáng, và cả hai đều chạy như tiến trình riêng, được backend gọi tới.</p>
+
+<figure>
+<svg viewBox="0 0 660 300" width="100%" role="img" aria-labelledby="pipeline-title" xmlns="http://www.w3.org/2000/svg" font-family="monospace" font-size="13">
+<title id="pipeline-title">Backend đóng gọi hai công cụ chạy riêng: OpenSfM (BSD-2) xuất file định dạng COLMAP, gsplat (Apache 2.0) đọc file đó để tạo cảnh 3DGS</title>
+<rect x="20" y="20" width="620" height="55" fill="none" stroke="var(--navy)" stroke-width="2"/>
+<text x="330" y="43" text-anchor="middle" fill="currentColor">Backend của bạn (mã đóng)</text>
+<text x="330" y="63" text-anchor="middle" fill="var(--ink-soft)">nhận ảnh, giao việc, trả kết quả</text>
+<path d="M115 75V110 M545 75V110" stroke="var(--navy)" stroke-width="2"/>
+<rect x="20" y="110" width="190" height="120" fill="none" stroke="var(--green)" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="115" y="140" text-anchor="middle" fill="var(--green)">Tiến trình 1</text>
+<text x="115" y="170" text-anchor="middle" fill="currentColor">OpenSfM</text>
+<text x="115" y="195" text-anchor="middle" fill="var(--ink-soft)">BSD-2</text>
+<path d="M210 170H237 M423 170H450" stroke="var(--gold)" stroke-width="3"/>
+<path d="M231 164L237 170L231 176 M444 164L450 170L444 176" stroke="var(--gold)" stroke-width="2" fill="none"/>
+<rect x="241" y="125" width="178" height="90" fill="none" stroke="var(--gold)" stroke-width="2"/>
+<text x="330" y="155" text-anchor="middle" fill="currentColor">File COLMAP</text>
+<text x="330" y="178" text-anchor="middle" fill="var(--ink-soft)">camera + điểm 3D</text>
+<text x="330" y="198" text-anchor="middle" fill="var(--ink-soft)">(chỉ là dữ liệu)</text>
+<rect x="450" y="110" width="190" height="120" fill="none" stroke="var(--green)" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="545" y="140" text-anchor="middle" fill="var(--green)">Tiến trình 2</text>
+<text x="545" y="170" text-anchor="middle" fill="currentColor">gsplat</text>
+<text x="545" y="195" text-anchor="middle" fill="var(--ink-soft)">Apache 2.0</text>
+<text x="330" y="268" text-anchor="middle" fill="var(--ink-soft)">Nét đứt = tiến trình riêng, trao đổi bằng file</text>
+</svg>
+<figcaption>Dùng định dạng file của COLMAP không có nghĩa là phải chạy chương trình COLMAP.</figcaption>
+</figure>
+
+<p>Điểm mấu chốt: <a href="https://github.com/mapillary/OpenSfM/blob/main/opensfm/actions/export_colmap.py">OpenSfM có sẵn lệnh <code>export_colmap</code></a>. Định dạng file của COLMAP đã thành chuẩn chung, nên mình dùng được định dạng đó mà không phải chạy COLMAP.</p>
+
+<aside class="callout"><p><strong>Thư viện con lại xuất hiện.</strong> Đoạn code đọc dữ liệu mẫu của gsplat dùng <code>pycolmap</code>, tức là phần Python của COLMAP. Không chạy COLMAP chưa chắc môi trường của bạn không có COLMAP. Nếu giữ đoạn code này, hãy kiểm tra bản <code>pycolmap</code> được cài có kèm CGAL hay không, hoặc tự viết phần đọc file.</p></aside>
+
+<p>Giấy phép phù hợp mới giải quyết câu hỏi “có được dùng không”. Câu hỏi “kết quả có đủ chính xác không” vẫn cần đo trên dữ liệu thật. Với công việc kiểm tra công trình, mình dùng đám mây điểm và mesh để đo đạc. Cảnh 3DGS chỉ là một cách xem bổ sung cho đẹp và trực quan.</p>
+
+<h2>Checklist trước khi đưa thư viện vào sản phẩm</h2>
+
+<figure class="sketch"><img src="/assets/blog/opensource-license/03.png" alt="Các thùng linh kiện xanh, vàng và đỏ được kiểm tra bằng kính lúp trên bàn trước khi đưa lên drone." width="1200" height="800" loading="lazy" /><figcaption>Kiểm kê những gì thực sự nằm trong thùng, rồi mới giao.</figcaption></figure>
+
+<ol class="lic-checklist">
+<li><strong>Ghi rõ cách bạn giao sản phẩm:</strong> SaaS, cài on-premise hay ứng dụng desktop. Đây là câu hỏi đầu tiên, vì nó quyết định nghĩa vụ.</li>
+<li><strong>Liệt kê mọi thứ thực sự được đóng gói</strong> (SBOM), gồm gói Python, thư viện C/C++, mã chép vào repo và những gì có trong Docker image. Các công cụ quét giấy phép giúp làm nhanh việc này. Kết quả “unknown” thì phải tự đọc, đừng mặc định là thoáng.</li>
+<li><strong>Kiểm tra tùy chọn build</strong>, ví dụ COLMAP có bật CGAL không. Ghi lại phiên bản và cấu hình, và kiểm tra lại mỗi lần nâng cấp.</li>
+<li><strong>Gom thông báo bản quyền</strong> của các thư viện vào một trang hoặc file <code>THIRD_PARTY_NOTICES</code>, kèm file <code>NOTICE</code> của các dự án Apache.</li>
+<li><strong>Đặt công cụ GPL/AGPL ở tiến trình riêng</strong>, trao đổi bằng file, nhưng vẫn làm đủ nghĩa vụ của chính công cụ đó.</li>
+<li><strong>Soát cả phần ngoài thư viện chính</strong>: script huấn luyện, code ví dụ, model đã huấn luyện sẵn, dataset. Mã nghiên cứu phi thương mại hay lẻn vào từ đây.</li>
+<li><strong>Hỏi luật sư với câu hỏi cụ thể.</strong> Mang theo sơ đồ các tiến trình và danh sách thư viện. Hỏi “phần này nối với phần kia như vầy thì có bị coi là một chương trình không?” sẽ có ích hơn nhiều so với “GPL có dùng thương mại được không?”.</li>
+</ol>
+
+<h2>Tóm lại</h2>
+
+<ul>
+<li><strong>Cách giao phần mềm quan trọng ngang tên giấy phép.</strong> Chạy trên server và gửi bản cài là hai câu chuyện khác nhau.</li>
+<li><strong>Đọc tới thư viện con.</strong> COLMAP dùng BSD, nhưng bản build kèm CGAL thì không còn “thuần BSD”.</li>
+<li><strong>Công khai không có nghĩa là được dùng thương mại.</strong> Hãy chọn bản cài đặt có giấy phép phù hợp, như gsplat thay cho mã 3DGS gốc.</li>
+<li><strong>Tiến trình riêng là ranh giới tốt, không phải phép miễn trừ.</strong></li>
+</ul>
+
+<h2>Nguồn tham khảo</h2>
+
+<ul class="lic-sources">
+<li>GNU: <a href="https://www.gnu.org/licenses/gpl.en.html">GPLv3</a>, <a href="https://www.gnu.org/licenses/lgpl-3.0.html">LGPLv3</a>, <a href="https://www.gnu.org/licenses/agpl-3.0.html">AGPLv3</a>, <a href="https://www.gnu.org/licenses/gpl-faq.en.html">GPL FAQ</a>.</li>
+<li>Mozilla: <a href="https://www.mozilla.org/en-US/MPL/2.0/">MPL 2.0</a> và <a href="https://www.mozilla.org/en-US/MPL/2.0/FAQ/">FAQ</a>. Apache: <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>. CeCILL: <a href="https://www.cecill.info/licences.en.html">các bản giấy phép</a>.</li>
+<li>COLMAP: <a href="https://colmap.github.io/license.html">giấy phép</a>, <a href="https://github.com/colmap/colmap/blob/main/CMakeLists.txt">tùy chọn build</a>. CGAL: <a href="https://www.cgal.org/license.html">giấy phép</a>.</li>
+<li>OpenSfM: <a href="https://github.com/mapillary/OpenSfM/blob/main/LICENSE">LICENSE</a>, <a href="https://opensfm.org/docs/using.html">tài liệu</a>. ODM: <a href="https://github.com/OpenDroneMap/ODM/blob/master/LICENSE">LICENSE</a>.</li>
+<li><a href="https://github.com/openMVG/openMVG/blob/develop/LICENSE">OpenMVG</a>, <a href="https://github.com/cdcseacave/openMVS/blob/master/LICENSE">OpenMVS</a>, <a href="https://github.com/alicevision/AliceVision/blob/develop/COPYING.md">AliceVision</a>, <a href="https://github.com/micmacIGN/micmac/blob/master/LICENSE.md">MicMac</a> (và <a href="https://github.com/micmacIGN/micmac/releases">release notes về ALGLIB</a>).</li>
+<li>3DGS: <a href="https://github.com/nerfstudio-project/gsplat/blob/main/LICENSE">gsplat</a>, <a href="https://github.com/graphdeco-inria/gaussian-splatting/blob/main/LICENSE.md">mã gốc Inria/MPII</a>.</li>
+</ul>
+        </div>
+        <footer class="post__foot">
+          <nav class="pager" data-post-nav aria-label="More posts"></nav>
+        </footer>
+      </article>
+    </main>
+    <footer class="blog-foot">
+      <p class="footer"><span class="tile tile--red tile--xs">印</span>© 2026 Hoang Anh Tuan · <a href="/">tuanha.dev</a></p>
+    </footer>
+  </body>
+</html>

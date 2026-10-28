@@ -2,6 +2,16 @@
 // Published posts live at /blog/<slug>/index.html. `lang: 'vi'` marks a post written in Vietnamese.
 export const POSTS = [
   {
+    slug: 'opensource-license',
+    lang: 'vi',
+    title: 'Dùng mã nguồn mở cho sản phẩm thương mại: khi nào phải công khai mã của mình?',
+    titleJa: 'ライセンスの境界',
+    date: '2026-10-28',
+    minutes: 11,
+    tags: ['open source', 'photogrammetry', '3dgs'],
+    summary: 'Từ ảnh drone đến mô hình 3D: phân biệt các nhóm giấy phép, cái bẫy thư viện con và khi nào phải công khai mã.',
+  },
+  {
     slug: 'pack-int16-into-png',
     lang: 'vi',
     title: 'Nhét số đo vào ảnh PNG: đưa bản đồ chênh cao lên GPU',

@@ -3569,6 +3569,15 @@ main:focus {
   background: var(--panel);
 }
 
+/* Silkscreen has no Vietnamese diacritics; Vietnamese posts use a font that does for table headers. */
+html[lang='vi'] .post__body th {
+  font-family: 'Be Vietnam Pro', var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .post__body .table-scroll {
   overflow-x: auto;
 }
@@ -3597,27 +3606,140 @@ main:focus {
   border: 2px solid var(--ink);
 }
 
+/* Open-source licence post: quick answer box, licence spectrum cards, status chips and checklist. */
+.lic-tldr {
+  padding: 16px 20px;
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.lic-tldr__title {
+  font-size: 15px;
+  color: var(--red);
+}
+
+.lic-tldr ul {
+  margin-top: 8px;
+  padding-left: 20px;
+}
+
+.lic-spectrum {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+
+.post__body .lic-spectrum li + li {
+  margin-top: 0;
+}
+
+.lic-card {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  background: var(--white);
+  border: 2px solid var(--ink);
+  border-top: 8px solid var(--lic, var(--ink));
+  box-shadow: var(--shadow-sm);
+}
+
+.lic-card--green { --lic: var(--green); }
+.lic-card--gold { --lic: var(--gold); }
+.lic-card--red { --lic: var(--red); }
+.lic-card--ink { --lic: var(--ink-soft); }
+
+.lic-card__name {
+  font-size: 15px;
+  color: var(--lic);
+}
+
+.lic-card__eg {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.lic-chip {
+  display: inline-block;
+  padding: 1px 8px;
+  font-family: 'Be Vietnam Pro', var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #fff;
+  border: 2px solid var(--ink);
+}
+
+.lic-chip--ok { background: var(--green); }
+.lic-chip--warn { background: var(--gold); color: #2a2622; }
+.lic-chip--bad { background: var(--red); }
+.lic-chip--nc { background: var(--ink-soft); }
+
+/* Silkscreen has no Vietnamese diacritics, so this post's labels use a font that does. */
+.lic-tldr__title,
+.lic-card__name {
+  font-family: 'Be Vietnam Pro', var(--font-body);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.lic-matrix td:first-child,
+.lic-engines td:first-child {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.lic-checklist {
+  padding: 0;
+  list-style: none;
+}
+
+.lic-checklist li {
+  position: relative;
+  padding-left: 34px;
+}
+
+.lic-checklist li::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--green);
+}
+
+.lic-sources {
+  font-size: 15px;
+}
+
+@media (max-width: 720px) {
+  .lic-spectrum {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .lic-spectrum {
+    grid-template-columns: 1fr;
+  }
+}
+
 .post__foot {
   display: grid;
   gap: 24px;
   margin-top: 56px;
   padding-top: 24px;
   border-top: 3px double var(--ink);
-}
-
-.post__author {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 18px;
-  font-size: 15px;
-  background: var(--panel);
-  border: 2px solid var(--ink);
-}
-
-.post__author img {
-  flex: none;
-  image-rendering: pixelated;
 }
 
 .pager {
