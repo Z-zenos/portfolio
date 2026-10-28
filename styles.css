@@ -3734,6 +3734,134 @@ html[lang='vi'] .post__body th {
   }
 }
 
+/* PNG packing post: formula line, four-step strip, trap cards and the collapsible details. */
+.pk-formula {
+  padding: 10px 16px;
+  font-family: monospace;
+  font-size: 16px;
+  text-align: center;
+  background: var(--panel);
+  border: 2px solid var(--ink);
+}
+
+.pk-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.post__body .pk-steps li + li {
+  margin-top: 0;
+}
+
+.pk-steps li {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+.pk-steps__n {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font-family: var(--font-label);
+  font-size: 12px;
+  color: #fff;
+  background: var(--red);
+  border: 2px solid var(--ink);
+}
+
+.pk-steps__eg {
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.pk-traps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.pk-trap {
+  padding: 14px;
+  font-size: 15px;
+  line-height: 1.6;
+  background: var(--white);
+  border: 2px solid var(--ink);
+  border-top: 8px solid var(--red);
+  box-shadow: var(--shadow-sm);
+}
+
+.pk-trap > * + * {
+  margin-top: 6px;
+}
+
+.post__body .pk-trap h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+}
+
+.pk-trap__n {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  font-size: 13px;
+  color: #fff;
+  background: var(--red);
+  border: 2px solid var(--ink);
+}
+
+.pk-trap__k {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.pk-trap__k + p + .pk-trap__k {
+  margin-top: 12px;
+  color: var(--green);
+}
+
+.pk-more {
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 2px dashed rgb(var(--ink-rgb) / 0.5);
+}
+
+.pk-more summary {
+  font-weight: 600;
+  cursor: var(--cur-hand);
+}
+
+.pk-more ul {
+  margin-top: 10px;
+  padding-left: 20px;
+  font-size: 15px;
+}
+
+@media (max-width: 720px) {
+  .pk-steps {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pk-traps {
+    grid-template-columns: 1fr;
+  }
+}
+
 .post__foot {
   display: grid;
   gap: 24px;

@@ -47,77 +47,65 @@
           <a class="post__back" href="/blog/">← Tất cả bài viết</a>
           <p class="sec-head__chapter"><span class="tile tile--red">記</span>「 数値をPNGに詰める 」</p>
           <h1 class="post__title">Nhét số đo vào ảnh PNG: đưa bản đồ chênh cao lên GPU</h1>
-          <p class="post__meta"><time datetime="2026-10-24">2026-10-24</time> · 15 phút đọc</p>
+          <p class="post__meta"><time datetime="2026-10-24">2026-10-24</time> · 10 phút đọc</p>
           <ul class="tags"><li>webgl</li><li>shaders</li><li>png</li></ul>
         </header>
         <figure class="post__cover"><img src="/assets/blog/pack-int16-into-png/cover.png" alt="" width="1200" height="675" /></figure>
         <div class="post__body">
-<p class="post__lead">Muốn biết mặt đất đã cao lên hay thấp xuống bao nhiêu giữa hai lần bay, mình cần tô màu từng điểm trong đám mây điểm của công trình. Mình đang thiết kế tính năng ấy, và vướng ở một chuyện: làm sao đưa cả lưới chênh cao lên GPU mà trình duyệt không tự ý sửa số đo? Phương án mình chọn là gói số vào ảnh PNG. Ảnh chở dữ liệu; shader mới quyết định màu.</p>
+<p class="post__lead">Mình cần tô màu hàng triệu điểm của một mô hình 3D theo việc mặt đất đã cao lên hay thấp xuống bao nhiêu giữa hai lần bay drone. Việc tô màu chạy trên GPU, nên phải gửi cả một bảng số đo từ server lên GPU của trình duyệt. Cách mình chọn hơi lạ: giấu số đo vào một ảnh PNG. Bài này giải thích vì sao nó hiệu quả, và ba chỗ trình duyệt có thể âm thầm làm hỏng số đo trên đường đi.</p>
 
-<h2>Shader cần tra số đo</h2>
+<h2>Bài toán: tô màu theo độ chênh cao</h2>
 
-<p>Sau khi xử lý ở phía server, mình có một lưới đều phủ khu vực đo. Mỗi ô lưới mang một số <strong>Δ</strong>: chênh cao giữa bản mới và bản cũ, tính bằng mét. Mình quy ước <strong>Δ = z_mới − z_cũ</strong>: dương là cao lên, âm là thấp xuống, tương ứng đắp và đào nếu hai bề mặt đều là mặt đất. Hai lần đo phải được căn chỉnh về cùng hệ toạ độ và mốc cao độ. Ô thiếu dữ liệu ở một trong hai lần đo được đánh dấu riêng.</p>
+<p>Sau mỗi lần bay, server dựng lại bề mặt công trình. So hai lần bay, mình có một <strong>lưới chênh cao</strong>: khu vực đo được chia thành các ô vuông đều nhau, mỗi ô mang một số <strong>Δ</strong> (đọc là “delta”), là độ chênh cao tính bằng mét:</p>
+
+<p class="pk-formula">Δ = cao độ lần mới − cao độ lần cũ</p>
+
+<p>Δ dương là đất cao lên (đắp), Δ âm là đất thấp xuống (đào). Có ô không có dữ liệu ở một trong hai lần đo; những ô đó được đánh dấu riêng.</p>
 
 <figure class="sketch"><img src="/assets/blog/pack-int16-into-png/01.png" alt="Lưới đo phủ địa hình dạng đám mây điểm, với hố đào màu đỏ, gò đắp màu xanh và kính lúp phóng to một ô lưới." width="1200" height="800" loading="lazy" /><figcaption>Mỗi điểm tìm về một ô lưới để biết mặt đất đã đổi cao độ ra sao.</figcaption></figure>
 
-<p>Trên trình duyệt, đám mây điểm được vẽ bằng WebGL. Với mỗi điểm, shader biết toạ độ (X; Y) của nó, đổi ra vị trí trên lưới, tra Δ, rồi chọn màu: đỏ cho đào, xanh cho đắp, xám cho "gần như không đổi". Với hàng triệu điểm mỗi khung hình, mình muốn phép tra và tô màu chạy ngay trên GPU.</p>
+<p>Trên trình duyệt, mô hình được vẽ bằng WebGL. Với từng điểm, một chương trình nhỏ chạy trên GPU (gọi là <strong>shader</strong>) tìm ô lưới chứa điểm đó, đọc Δ của ô, rồi chọn màu: đỏ cho đào, xanh cho đắp, xám cho gần như không đổi.</p>
 
-<p>Với một bảng 2D lớn, uniform không phải nơi chứa phù hợp. <strong>Texture</strong> cho shader tra dữ liệu theo toạ độ, và dữ liệu ấy không nhất thiết là màu hay đến từ ảnh. Trong thiết kế này, mình dùng texture để giữ lưới Δ. Câu hỏi tiếp theo là: chuyển lưới ấy từ server tới GPU bằng định dạng nào?</p>
+<p>Để shader tra được cả một bảng 2D lớn, cách tự nhiên là đưa bảng đó lên GPU dưới dạng <strong>texture</strong>. Texture thường dùng để chứa ảnh, nhưng thực chất nó chỉ là một bảng số mà GPU tra rất nhanh theo toạ độ. Câu hỏi còn lại là gửi bảng ấy từ server xuống bằng định dạng nào.</p>
 
 <h2>Vì sao chọn PNG</h2>
 
-<p>Các con số minh hoạ dưới đây đều là giả lập. Lưới hiển thị dự kiến có cạnh dài nhất không quá 4096 ô, tức tối đa khoảng 16,8 triệu ô. Đây là trần thiết kế; khi chạy còn phải kiểm tra <code>MAX_TEXTURE_SIZE</code> và khả năng tra texture ở vertex shader nếu dùng tại đó. Một texture RGBA8 cỡ 4096 × 4096 đã chiếm 64 MiB, chưa kể các bản sao trên CPU. Mình cân nhắc vài phương án:</p>
+<p>Lưới có thể lên tới 4096 × 4096 ô, tức khoảng 16,8 triệu số. Mình cân nhắc vài cách:</p>
 
+<div class="table-scroll" role="region" aria-label="So sánh định dạng" tabindex="0">
 <table>
   <thead>
-    <tr><th>Cách lưu</th><th>Tải về</th><th>Đưa lên GPU</th><th>Vướng</th></tr>
+    <tr><th>Cách lưu</th><th>Ưu điểm</th><th>Nhược điểm</th></tr>
   </thead>
   <tbody>
-    <tr><td>JSON <code>[[0.12, -0.05, …]]</code></td><td>Rất lớn (hàng chục triệu ký tự số)</td><td>Parse rồi chép sang mảng</td><td>Tốn thời gian parse và bộ nhớ</td></tr>
-    <tr><td>GeoTIFF số thực</td><td>Tuỳ dữ liệu và cách nén</td><td>Trình duyệt không tự giải mã TIFF, cần thư viện</td><td>WebGL 1 cần phần mở rộng cho texture số thực</td></tr>
-    <tr><td><code>.bin</code> int16 + gzip</td><td>Tuỳ lưới và mức nén</td><td>WebGL 2 có thể dùng texture <code>R16I</code></td><td>Cần thống nhất thứ tự byte; HTTP có thể tự giải nén gzip</td></tr>
-    <tr><td>Gắn Δ vào từng điểm</td><td>Phải ghi lại dữ liệu điểm</td><td>Bộ đọc đám mây điểm không đọc thuộc tính phụ</td><td>Loại</td></tr>
-    <tr><td><strong>PNG RGBA</strong> (chọn)</td><td>Nén không mất dữ liệu; độ gọn tuỳ lưới</td><td>Trình duyệt có sẵn bộ giải mã</td><td>Phải tách số ra hai kênh, và tránh ba cái bẫy bên dưới</td></tr>
+    <tr><td>JSON</td><td>Dễ đọc</td><td>Hàng chục triệu ký tự số, parse chậm và tốn bộ nhớ</td></tr>
+    <tr><td>GeoTIFF</td><td>Định dạng chuẩn ngành bản đồ</td><td>Trình duyệt không tự đọc được, cần thêm thư viện</td></tr>
+    <tr><td>File nhị phân <code>.bin</code></td><td>Gọn, đọc thẳng</td><td>Phải tự lo thứ tự byte và nén; khó kiểm tra bằng mắt</td></tr>
+    <tr><td><strong>PNG</strong> (chọn)</td><td>Nén không mất dữ liệu, trình duyệt giải mã sẵn, mở ra là nhìn được</td><td>Phải tự “gói” số vào các kênh màu</td></tr>
   </tbody>
 </table>
+</div>
 
-<p>PNG không phải lựa chọn đúng duy nhất; file <code>.bin</code> cũng dùng được. Mình chọn PNG vì có sẵn bộ giải mã, nén không mất dữ liệu và <em>mở file ra là nhìn được cấu trúc</em>. Một mảng trống hay hình dạng bất thường có thể lộ ra ngay. Tuy vậy, ảnh chỉ giúp kiểm tra sơ bộ: muốn biết có lệch hay lật bắc–nam vẫn cần đối chiếu mốc đã biết. Nén giữ nguyên byte không có nghĩa cả đường giải mã và upload cũng giữ nguyên byte.</p>
+<p>File <code>.bin</code> cũng là lựa chọn tốt. Điểm mình thích ở PNG là có thể <em>mở file ra xem</em>: một lưới bị trống hay lệch hình sẽ lộ ra ngay. Tất nhiên nhìn thấy đúng hình chưa có nghĩa là số đúng, nên vẫn cần kiểm thử, như phần cuối bài sẽ nói.</p>
 
-<h2>Mượn ảnh để chở số</h2>
+<h2>Giấu số vào màu</h2>
 
-<blockquote>
-  <p>"Binh vô thường thế, thuỷ vô thường hình" (兵无常势，水无常形)<br>Quân không có thế cố định, nước không có hình cố định.</p>
-  <p><em>Binh pháp Tôn Tử, thiên Hư Thực</em></p>
-</blockquote>
+<p>Mỗi pixel của PNG có bốn kênh R, G, B, A. Mỗi kênh là <strong>một byte</strong>, chỉ chứa được số nguyên từ 0 đến 255. Thế thì làm sao chứa được Δ = −0,123 m?</p>
 
-<p>Câu này là cách mình nhớ cả ý tưởng. Nước vào bình nào thì mang hình bình ấy; Δ vào PNG thì thành R, G, B, A. Sau bước làm tròn và kẹp miền giá trị, số nguyên được giữ nguyên trong cái vỏ mà hạ tầng sẵn có biết chuyên chở. Mình liên tưởng tới <strong>"giả đạo phạt Quắc"</strong> trong Tam thập lục kế: mượn đường để đánh Quắc. Ở đây mình chỉ mượn ý “mượn đường”: tận dụng đường tải và giải mã ảnh để chở số đo.</p>
+<figure class="sketch"><img src="/assets/blog/pack-int16-into-png/02.png" alt="Bình thủy tinh tròn rót nước xanh vào khay chữ nhật trong suốt có đáy chia bốn ô, nước mang hình của khay chứa." width="1200" height="800" loading="lazy" /><figcaption>Nước vào khay nào mang hình khay ấy; số đo vào PNG thì mang hình R, G, B, A.</figcaption></figure>
 
-<figure class="sketch"><img src="/assets/blog/pack-int16-into-png/02.png" alt="Bình thủy tinh tròn rót nước xanh vào khay chữ nhật trong suốt có đáy chia bốn ô, nước mang hình của khay chứa." width="1200" height="800" loading="lazy" /><figcaption>Nước mượn hình bình chứa; số đo mượn vỏ ảnh để đi nhờ.</figcaption></figure>
+<p>Ý tưởng: dùng <strong>hai kênh</strong> cho một số. Hai byte ghép lại cho 256 × 256 = 65 536 giá trị, đủ để chứa chênh cao từ −32,767 m đến +32,767 m với độ chi tiết 1 mm. Quy trình gồm bốn bước:</p>
 
-<p>Đây là cách dùng <strong>data texture</strong>: texture chứa dữ liệu để shader tính toán. Mình gói bảng số vào RGBA, kèm một <strong>quy ước giải mã</strong> mà bên ghi và bên đọc cùng giữ. Cách nghĩ này cũng xuất hiện ở bản đồ độ cao mã hoá vào RGB, normal map chứa véc-tơ pháp tuyến và các kỹ thuật đóng gói độ sâu vào nhiều kênh.</p>
-
-<p>Trong trường hợp của mình, các kênh ảnh <strong>không biểu diễn màu hiển thị</strong>. Màu người dùng thấy là do shader tính lại từ Δ. Quy ước giải mã đi kèm ảnh dưới dạng một file metadata nhỏ, gồm ba thứ:</p>
-
-<ul>
-  <li><strong>Đơn vị và hệ số:</strong> R·256 + G là mẫu bit int16 bù hai của Δ theo milimét; B là cờ hợp lệ; A luôn bằng 255.</li>
-  <li><strong>Thứ tự hàng:</strong> hàng 0 là mép bắc.</li>
-  <li><strong>Khung toạ độ:</strong> bốn mép ngoài của lưới, số hàng/cột, kích thước ô và hệ toạ độ; không nhầm mép ngoài với tâm ô.</li>
-</ul>
-
-<p>Chọn được vật chứa mới giải quyết một nửa bài toán. Phần còn lại là giữ đúng quy ước qua từng bước: từ mét sang số nguyên, từ số nguyên sang byte, rồi từ byte trở lại mét trong shader.</p>
-
-<h2>Từ mét sang hai byte</h2>
-
-<p>Mình dùng PNG RGBA 8 bit: mỗi pixel có bốn kênh R, G, B, A, mỗi kênh một byte (0 đến 255). Một byte quá ít để chứa chênh cao, nhưng hai byte thì đủ. R đếm số lần 256, G giữ phần dư. Ghép lại, hai byte biểu diễn được 65536 mẫu bit.</p>
-
-<p>Kế hoạch như sau:</p>
-
-<ol>
-  <li>Đổi Δ sang <strong>milimét</strong> và làm tròn, ví dụ −0,123 m thành −123.</li>
-  <li>Kẹp vào khoảng của số nguyên có dấu 16 bit (int16). Mình kẹp đối xứng về [−32767; 32767], tức tối đa ±32,767 m. Khoảng này bỏ trống giá trị −32768 của int16; cần đổi thang đo nếu phạm vi lớn hơn. Ô nào bị kẹp thì đếm lại để báo lên giao diện, không lặng lẽ nuốt mất.</li>
-  <li>Số âm lưu ở dạng <strong>bù hai</strong>, đúng cách máy tính vẫn lưu số âm: cộng thêm 65536. Ví dụ −123 thành 65413.</li>
-  <li>Tách: <strong>R = byte cao</strong>, <strong>G = byte thấp</strong>. <strong>B = 255</strong> nếu ô hợp lệ, 0 nếu không có dữ liệu. A luôn là 255.</li>
+<ol class="pk-steps">
+  <li><span class="pk-steps__n">1</span><strong>Đổi sang milimét</strong> và làm tròn<span class="pk-steps__eg">−0,123 m → −123</span></li>
+  <li><span class="pk-steps__n">2</span><strong>Kẹp</strong> vào khoảng ±32 767<span class="pk-steps__eg">+40 m → 32 767</span></li>
+  <li><span class="pk-steps__n">3</span><strong>Số âm cộng 65 536</strong><span class="pk-steps__eg">−123 → 65 413</span></li>
+  <li><span class="pk-steps__n">4</span><strong>Tách làm hai byte</strong> R và G<span class="pk-steps__eg">65 413 → R 255, G 133</span></li>
 </ol>
+
+<p>Bước 3 cần giải thích một chút. Một byte không có dấu âm, nên mình dùng cách máy tính vẫn lưu số âm, gọi là <strong>bù hai</strong>: số âm được cộng thêm 65 536. Khi đọc lại, số nào từ 32 768 trở lên thì trừ đi 65 536 là ra số âm ban đầu.</p>
+
+<p>Ở bước 4, R là “số lần 256” và G là phần dư, giống như viết một số theo hàng trăm và hàng đơn vị: 65 413 = 255 × 256 + 133. Kênh B dùng làm cờ: 255 nếu ô có dữ liệu, 0 nếu không. Kênh A luôn là 255 (đục hoàn toàn); lý do nằm ở phần cái bẫy bên dưới.</p>
 
 <figure>
   <svg viewBox="0 0 640 280" width="100%" role="img" aria-labelledby="svg-split-title" font-family="inherit" font-size="13">
@@ -150,23 +138,23 @@
   <figcaption>Một pixel mang một số đo: hai kênh đầu là hai nửa của số int16, kênh B là cờ hợp lệ.</figcaption>
 </figure>
 
-<p>Vài ví dụ để đối chiếu quy ước:</p>
+<p>Vài ví dụ để đối chiếu:</p>
 
+<div class="table-scroll" role="region" aria-label="Ví dụ mã hoá" tabindex="0">
 <table>
   <thead>
-    <tr><th>Δ (m)</th><th>mm</th><th>R</th><th>G</th><th>Giải mã R·256 + G (trừ 65536 nếu ≥ 32768)</th></tr>
+    <tr><th>Δ (m)</th><th>mm</th><th>R</th><th>G</th><th>Đọc lại</th></tr>
   </thead>
   <tbody>
-    <tr><td>−0,123</td><td>−123</td><td>255</td><td>133</td><td>65413 − 65536 = −123</td></tr>
+    <tr><td>−0,123</td><td>−123</td><td>255</td><td>133</td><td>255·256 + 133 − 65 536 = −123</td></tr>
     <tr><td>+1,5</td><td>1500</td><td>5</td><td>220</td><td>5·256 + 220 = 1500</td></tr>
     <tr><td>+0,005</td><td>5</td><td>0</td><td>5</td><td>5</td></tr>
-    <tr><td>+40</td><td>kẹp về 32767</td><td>127</td><td>255</td><td>32767 (= 32,767 m)</td></tr>
+    <tr><td>+40</td><td>bị kẹp về 32 767</td><td>127</td><td>255</td><td>32 767 (= 32,767 m)</td></tr>
   </tbody>
 </table>
+</div>
 
-<p>Để ý quy luật: số âm nhỏ có byte cao là 255 (vì nó "vòng lại" sát 65536), số dương nhỏ có byte cao là 0. R bằng 0 hoặc 255 chỉ cho biết số đã mã hoá nằm trong [−256; 255] mm, chưa đủ để kết luận công trình gần như không đổi.</p>
-
-<p><strong>Sao không lưu luôn số thực?</strong> WebGL 2 có texture số thực; WebGL 1 cần phần mở rộng, còn khả năng lọc là chuyện riêng. PNG RGBA8 thuận tiện cho đường tải hiện có. Đổi lại, mình chọn bước lượng tử 1 mm: sai số làm tròn tối đa 0,5 mm nếu không bị kẹp. Đó là độ phân giải mã hoá, không phải độ chính xác phép đo bằng drone.</p>
+<p>Làm tròn tới milimét nghĩa là sai số tối đa 0,5 mm. Như vậy là đủ cho hiển thị, vì sai số của chính phép đo bằng drone lớn hơn nhiều. Ô nào bị kẹp thì server đếm lại và báo lên giao diện, chứ không lặng lẽ bỏ qua.</p>
 
 <p>Phía server, phần đóng gói chỉ vài dòng NumPy:</p>
 
@@ -189,13 +177,13 @@ def pack_delta_png(delta_m, valid, path):
     return clamped
 </code></pre>
 
-<p>Mẹo nhỏ ở đây là <code>.view(np.uint16)</code>: nó không đổi số, chỉ đọc lại cùng 16 bit theo kiểu không dấu, và bù hai tự hiện ra. Hai đầu vào phải là mảng 2D cùng kích thước. Mình loại cả NaN và vô cực khỏi mặt nạ hợp lệ, rồi thay bằng 0 trước khi nhân và làm tròn. <code>np.rint</code> làm tròn điểm giữa về số chẵn; bên kiểm thử cũng phải dùng cùng quy tắc.</p>
+<p>Mẹo ở đây là <code>.view(np.uint16)</code>. Nó không đổi giá trị, chỉ đọc lại cùng 16 bit như số không dấu, nên số âm tự động trở thành dạng bù hai. Không cần tự cộng 65 536.</p>
 
-<h2>Đọc lại trên CPU và GPU</h2>
+<h2>Đọc lại trên trình duyệt</h2>
 
-<p>Sau khi giải mã PNG và đọc qua canvas, mình lấy được <strong>một mảng 1 chiều phẳng</strong> dài <code>w × h × 4</code> byte: R, G, B, A của pixel 0, rồi của pixel 1, cứ thế hết hàng 0 (mép bắc) mới sang hàng 1. Pixel ở cột <code>x</code>, hàng <code>y</code> bắt đầu tại chỉ số <code>i = (y · w + x) · 4</code>. Ví dụ ảnh 3 × 2 có 24 byte, pixel (x = 1; y = 1) bắt đầu ở byte (1·3 + 1)·4 = 16.</p>
+<p>Trên trình duyệt có hai nơi cần đọc số. JavaScript cần nó để hiện giá trị Δ khi rê chuột lên mô hình, còn GPU cần nó để tô màu.</p>
 
-<p>Phía JavaScript, mình cần một bản <code>Int16Array</code> để hiện tooltip khi rê chuột:</p>
+<p>Phía JavaScript, mình giải mã PNG thành một mảng byte phẳng: R, G, B, A của pixel đầu tiên, rồi của pixel thứ hai, cứ thế đi hết từng hàng. Pixel ở cột <code>x</code>, hàng <code>y</code> bắt đầu ở vị trí <code>(y · w + x) · 4</code>, với <code>w</code> là chiều rộng ảnh. Ghép R và G, trừ 65 536 nếu cần, là có lại số milimét:</p>
 
 <pre><code class="lang-js">async function loadDeltaGrid(url) {
   const response = await fetch(url);
@@ -227,7 +215,9 @@ def pack_delta_png(delta_m, valid, path):
 }
 </code></pre>
 
-<p>Mình đưa chính mảng <code>rgba</code> này lên texture RGBA/UNSIGNED_BYTE bằng <code>texImage2D</code>, để CPU và GPU đọc cùng bộ byte. Đoạn mã cần trình duyệt hỗ trợ các API trên; canvas vẫn phải được kiểm thử giữ nguyên byte. Trên GPU, shader gọi <code>texture2D</code> với toạ độ (u; v) và nhận về bốn kênh đã bị <strong>chia cho 255</strong>, tức nằm trong [0; 1]. Vì thế việc đầu tiên là nhân lại 255 và làm tròn, rồi mới ghép:</p>
+<p>Mảng <code>rgba</code> ấy cũng được đưa nguyên lên GPU làm texture, để JavaScript và GPU đọc đúng cùng một bộ byte.</p>
+
+<p>Phía GPU có một khác biệt nhỏ nhưng quan trọng: khi shader đọc texture, mỗi kênh đã bị <strong>chia cho 255</strong>, nên nằm trong khoảng 0 đến 1. Vì thế việc đầu tiên là nhân lại 255 và <em>làm tròn</em>, rồi mới ghép:</p>
 
 <pre><code class="lang-glsl">precision highp float;
 uniform highp sampler2D uDelta;
@@ -242,29 +232,37 @@ float sampleDelta(vec2 uv, out bool valid) {
 }
 </code></pre>
 
-<p>Bước làm tròn trông thừa nhưng không thừa: 133/255 nhân lại 255 trên GPU có thể ra 132,99997, và <code>floor</code> thẳng thì thành 132. Lệch một đơn vị ở byte thấp thường là 1 mm, ở byte cao là 256 mm; qua ranh giới dấu còn có thể nhảy gần 65,536 m. Cả phép tính lẫn toạ độ UV cần <code>highp</code>; <code>mediump</code> không bảo đảm giữ đủ 16 bit. Nếu đọc trong fragment shader WebGL 1, phải kiểm tra hỗ trợ <code>highp</code>, không âm thầm hạ độ chính xác.</p>
+<p>Bước làm tròn trông thừa nhưng không thừa. 133 / 255 nhân lại 255 trên GPU có thể ra 132,99997, và nếu chỉ cắt phần lẻ thì thành 132: lệch 1 mm. Lệch ở byte R còn tệ hơn, vì mỗi đơn vị của R bằng 256 mm. Cũng vì vậy shader cần độ chính xác cao (<code>highp</code>); độ chính xác trung bình không đảm bảo giữ đủ 16 bit.</p>
 
-<h2>Ba cái bẫy khi đọc lại ảnh</h2>
+<h2>Ba cái bẫy khi trình duyệt xử lý ảnh</h2>
 
-<p>Đọc đúng công thức chưa đủ. Đường xử lý ảnh còn có thể đổi màu, lật hàng và trộn pixel — ba việc hợp lý với ảnh để <em>nhìn</em>, nhưng dễ phá số đo.</p>
+<p>Trình duyệt và GPU luôn cố làm ảnh <em>trông đẹp hơn</em>: chỉnh màu, lật, làm mượt. Với ảnh thường thì không sao, nhưng ở đây các byte là số đo. Chỉ cần một byte đổi giá trị là số đo sai.</p>
 
-<h3>1. Quản lý màu</h3>
+<div class="pk-traps">
+  <section class="pk-trap">
+    <h3><span class="pk-trap__n">1</span>Chỉnh màu</h3>
+    <p class="pk-trap__k">Chuyện gì xảy ra</p>
+    <p>Trình duyệt có thể đổi màu theo hồ sơ màu của file hoặc màn hình, hoặc nhân sẵn RGB với kênh trong suốt A. Kênh G lệch từ 133 sang 131 là sai 2 mm; kênh R lệch 2 là sai 512 mm.</p>
+    <p class="pk-trap__k">Cách tránh</p>
+    <p>Giải mã với <code>colorSpaceConversion: 'none'</code> và <code>premultiplyAlpha: 'none'</code>. Không gắn hồ sơ màu vào PNG. Giữ A = 255, để nếu có bước nào nhân với A thì cũng chỉ là nhân với 1. Đó là lý do cờ hợp lệ nằm ở B chứ không ở A.</p>
+  </section>
+  <section class="pk-trap">
+    <h3><span class="pk-trap__n">2</span>Lật ảnh</h3>
+    <p class="pk-trap__k">Chuyện gì xảy ra</p>
+    <p>Texture không biết đâu là hướng bắc. Một bước tải lên có thể lật ảnh theo chiều dọc, và vùng đắp ở phía bắc bỗng hiện ra ở phía nam.</p>
+    <p class="pk-trap__k">Cách tránh</p>
+    <p>Quy ước rõ ràng: hàng đầu tiên của PNG là mép bắc. Tải mảng byte lên đúng thứ tự ấy. Kiểm thử bằng một lưới mẫu có bốn góc mang bốn giá trị khác nhau, để lật sai là thấy ngay.</p>
+  </section>
+  <section class="pk-trap">
+    <h3><span class="pk-trap__n">3</span>Làm mượt</h3>
+    <p class="pk-trap__k">Chuyện gì xảy ra</p>
+    <p>GPU mặc định trộn các ô kề nhau cho mượt, nhưng trộn <strong>từng kênh riêng rẽ</strong>. Nó không biết R và G là hai nửa của cùng một số.</p>
+    <p class="pk-trap__k">Cách tránh</p>
+    <p>Đặt bộ lọc texture là <code>NEAREST</code>, để mỗi lần đọc chỉ lấy đúng một ô, và không tạo mipmap (các bản thu nhỏ của texture).</p>
+  </section>
+</div>
 
-<p>Khi giải mã ảnh, trình duyệt có thể chuyển màu theo hồ sơ màu của file hoặc của màn hình, còn ở bước xử lý hoặc upload, RGB có thể bị nhân trước với alpha. Với ảnh phong cảnh, một kênh lệch từ 133 sang 131 có thể khó nhận ra. Với Δ, lệch như vậy ở G là 2 mm, còn ở R là 512 mm, miễn chưa qua ranh giới dấu. Tệ hơn, sai số này không đều, nên khó phát hiện bằng mắt. Kế hoạch là giải mã bằng <code>createImageBitmap</code> với <code>colorSpaceConversion: 'none'</code> và <code>premultiplyAlpha: 'none'</code>, đồng thời giữ A = 255 để dù có bước nào nhân alpha thì cũng nhân với 1. Đó cũng là lý do cờ hợp lệ nằm ở B chứ không ở A.</p>
-
-<p>Không gắn hồ sơ màu vào PNG, không dùng texture sRGB vì phép đọc sẽ biến đổi RGB. Ô có B = 0 phải được bỏ qua, không tô như Δ = 0. Hai tuỳ chọn giải mã không tắt mọi chuyển đổi ở canvas: mình cần thử đọc lại mẫu byte; nếu không giữ nguyên thì dùng bộ giải mã PNG trả byte trực tiếp.</p>
-
-<h3>2. Lật dọc (flipY)</h3>
-
-<p>Texture không tự biết hướng bắc. Với lưới thẳng theo hai trục đông–bắc, mình quy ước hàng 0 của PNG là mép <strong>bắc</strong> và upload mảng byte theo nguyên thứ tự ấy. Với X tăng về đông, Y tăng về bắc, <code>u = (X − xmin)/(xmax − xmin)</code>, <code>v = (ymax − Y)/(ymax − ymin)</code>. Tâm ô (x; y) ứng với <code>((x + 0.5)/w, (y + 0.5)/h)</code>. Mình dùng toạ độ cục bộ gần gốc khi tính UV trên GPU để giảm mất độ chính xác do trừ hai số lớn. Điểm ngoài khung phải bị loại trước khi tra, tránh kéo giá trị ô biên ra ngoài vùng đo.</p>
-
-<p>Nếu upload trực tiếp <code>ImageBitmap</code>, các cờ <code>UNPACK_*</code> về lật, alpha và màu bị bỏ qua; phải đặt bằng tuỳ chọn lúc tạo bitmap. Lật sai chỉ chuyển bãi đắp từ bắc xuống nam, không đổi nó thành đào. Mẫu thử nên có bốn góc khác nhau để lỗi dễ lộ.</p>
-
-<h3>3. Lọc tuyến tính</h3>
-
-<p>Đây là cái bẫy mình thấy thú vị nhất. Khi bật lọc tuyến tính, GPU trộn các ô lân cận cho mượt; mặc định phóng to là tuyến tính, còn thu nhỏ dùng bộ lọc có mipmap. Nhưng nó trộn <strong>từng kênh một</strong>, không hề biết R và G là hai nửa của cùng một con số.</p>
-
-<p>Lấy hai ô kề nhau: −0,123 m (R 255, G 133) và +0,005 m (R 0, G 5). Trung bình đúng phải là −0,059 m. Còn GPU trộn 50/50 thì ra R = 127,5 và G = 69. Shader nhân 255, làm tròn R thành 128, ghép ra 128·256 + 69 = 32837, trừ 65536 thành −32699 mm, tức <strong>−32,699 m</strong>. Nếu làm tròn xuống thành 127 thì lại ra +32,581 m. Kiểu gì cũng vô nghĩa, và vì nó chỉ xảy ra ở mép giữa các ô, bản đồ sẽ có những đường viền đỏ chói rất khó hiểu.</p>
+<p>Cái bẫy thứ ba là thú vị nhất, nên mình tính thử một ví dụ. Hai ô kề nhau mang −0,123 m (R 255, G 133) và +0,005 m (R 0, G 5). Trung bình đúng phải là −0,059 m. Nhưng GPU trộn 50/50 từng kênh thì ra R = 127,5 và G = 69. Ghép lại thành <strong>−32,699 m</strong>, hoặc +32,581 m nếu R được làm tròn xuống. Kiểu nào cũng vô nghĩa. Vì lỗi chỉ xảy ra ở mép giữa các ô, bản đồ sẽ hiện những đường viền đỏ chói rất khó hiểu.</p>
 
 <figure>
   <svg viewBox="0 0 640 300" width="100%" role="img" aria-labelledby="svg-filter-title" font-family="inherit" font-size="13">
@@ -299,26 +297,45 @@ float sampleDelta(vec2 uv, out bool valid) {
   <figcaption>Lọc tuyến tính trộn từng byte độc lập. Với số được đóng gói, trung bình của các byte không phải byte của trung bình.</figcaption>
 </figure>
 
-<p>Mình đặt cả <code>TEXTURE_MIN_FILTER</code> và <code>TEXTURE_MAG_FILTER</code> thành <code>gl.NEAREST</code>, không tạo mipmap, và đặt hai chiều wrap là <code>gl.CLAMP_TO_EDGE</code>. Cấu hình này cũng dùng được cho ảnh có kích thước không phải luỹ thừa hai trong WebGL 1. Muốn nội suy, phải lấy bốn ô, giải mã rồi mới trộn số mét; ô không hợp lệ cần bị loại và trọng số phải chuẩn hoá lại.</p>
+<p>Nếu thật sự cần nội suy cho mượt, hãy đọc bốn ô lân cận, giải mã từng ô ra mét, rồi mới trộn các số mét đó, bỏ qua những ô không có dữ liệu.</p>
 
+<details class="pk-more">
+<summary>Chi tiết thêm cho ai định làm thật</summary>
+<ul>
+  <li><strong>Kiểm tra giới hạn GPU:</strong> đọc <code>MAX_TEXTURE_SIZE</code> trước khi tải lưới lớn. Một texture 4096 × 4096 RGBA đã chiếm 64 MiB.</li>
+  <li><strong>Hai tuỳ chọn giải mã chưa chắc tắt hết chuyển đổi màu ở canvas.</strong> Hãy đọc lại một mẫu byte đã biết; nếu không khớp thì dùng một bộ giải mã PNG trả byte trực tiếp.</li>
+  <li><strong>Nếu tải thẳng <code>ImageBitmap</code> lên GPU,</strong> các cờ lật và alpha của WebGL bị bỏ qua; phải đặt chúng lúc tạo bitmap.</li>
+  <li><strong>Toạ độ tra cứu:</strong> với X tăng về đông và Y tăng về bắc, <code>u = (X − xmin) / (xmax − xmin)</code> và <code>v = (ymax − Y) / (ymax − ymin)</code>. Nên tính trên toạ độ cục bộ gần gốc để tránh mất độ chính xác khi trừ hai số lớn. Loại các điểm nằm ngoài khung lưới trước khi tra.</li>
+  <li><strong>Đặt wrap là <code>CLAMP_TO_EDGE</code></strong>. Kết hợp với <code>NEAREST</code> và không mipmap, cấu hình này dùng được cả cho ảnh có kích thước không phải luỹ thừa của 2 trên WebGL 1.</li>
+  <li><strong>Làm tròn nhất quán:</strong> <code>np.rint</code> làm tròn điểm giữa về số chẵn, nên code kiểm thử cũng phải dùng đúng quy tắc đó.</li>
+</ul>
+</details>
 
-<h2>Màu để nhìn, histogram để đếm</h2>
+<h2>Ảnh để nhìn, không để tính</h2>
 
-<p>Một cám dỗ dễ hiểu: đã có ảnh Δ trong tay, sao không cộng luôn ra thể tích đào đắp? Mình cố ý không làm vậy. Ảnh hiển thị đã bị <strong>thu nhỏ</strong> (mỗi ô ảnh là trung bình các ô con hợp lệ) và <strong>làm tròn tới milimét</strong>. Ngoài sai số lượng tử và phần bị kẹp, ảnh còn mất thông tin diện tích hợp lệ và các vùng đào/đắp triệt tiêu nhau khi lấy trung bình.</p>
+<p>Đã có ảnh Δ trong tay, sao không cộng luôn ra thể tích đất đào đắp? Mình cố ý không làm vậy. Ảnh hiển thị thường đã được thu nhỏ, mỗi pixel là trung bình của nhiều ô gốc, và trong quá trình đó mất thông tin về ô thiếu dữ liệu.</p>
 
 <figure class="sketch"><img src="/assets/blog/pack-int16-into-png/03.png" alt="Ba khối đất cao khác nhau nằm trên ba ô của lưới hai nhân hai, ô còn lại để trống, bên cạnh là tấm vuông màu xanh đồng nhất." width="1200" height="800" loading="lazy" /><figcaption>Một màu trung bình không kể hết những khối đất và ô còn thiếu.</figcaption></figure>
 
-<p>Ví dụ một khối 2 × 2 ô, mỗi ô 1 m², có Δ = 0,10; 0,12; (thiếu); 0,20 m. Ô ảnh mang trung bình 0,14 m. Tính từ ảnh: 0,14 × 4 m² = 0,56 m³. Tính đúng từ ba ô có dữ liệu: (0,10 + 0,12 + 0,20) m × 1 m² = 0,42 m³. Chênh một phần ba, chỉ vì ô thiếu dữ liệu bị đối xử như có Δ trung bình. Vì vậy, mình dự kiến tính riêng <code>V_đắp = Σ max(Δ, 0)·S</code> và <code>V_đào = Σ max(−Δ, 0)·S</code> trên các ô hợp lệ của lưới gốc, với S là diện tích ô theo m². Server cộng bằng float64; histogram phục vụ phân bố. Muốn tính thể tích từ histogram của lưới đều, mỗi bin cần kèm tổng Δ dương/âm chưa làm tròn và diện tích ô gốc; chỉ số lượng và tâm bin sẽ cho kết quả xấp xỉ. PNG chỉ phục vụ hiển thị.</p>
-
-<h2>Bài học mang đi được</h2>
+<p>Ví dụ: một khối 2 × 2 ô, mỗi ô 1 m², có Δ lần lượt là 0,10; 0,12; (thiếu); 0,20 m. Pixel thu nhỏ mang trung bình 0,14 m.</p>
 
 <ul>
-  <li><strong>Dữ liệu không phải ảnh, dù nó đội lốt ảnh.</strong> Các bước đổi màu, lật, lọc hay chuyển sang định dạng nén mất dữ liệu có thể làm sai số đo. Riêng bit thấp nhất của byte cao đã có trọng số 256 mm.</li>
-  <li><strong>Kiểm tra bằng cách mở file ra xem.</strong> PNG giúp mình nhìn nhanh cấu trúc, nhưng không chứng minh được số đo đúng. Cần mẫu không đối xứng, các giá trị sát biên byte/dấu và ô thiếu dữ liệu; kiểm tra cả byte trên CPU lẫn kết quả giải mã trên GPU.</li>
-  <li><strong>Mọi bước "tiện lợi" của trình duyệt đều có thể phá số đo.</strong> Khi đi qua một đường ống vốn sinh ra cho thứ khác, hãy liệt kê từng khâu và tự hỏi: khâu này có giữ nguyên từng byte không? Nếu không chắc, tắt nó đi và ghi lại lý do.</li>
+  <li>Tính từ ảnh: 0,14 m × 4 m² = <strong>0,56 m³</strong></li>
+  <li>Tính đúng từ ba ô có dữ liệu: (0,10 + 0,12 + 0,20) m × 1 m² = <strong>0,42 m³</strong></li>
 </ul>
 
-<p>Tính năng vẫn ở giai đoạn thiết kế; đường giải mã này còn cần kiểm chứng trên trình duyệt và GPU mục tiêu. Nhưng cách nghĩ thì mình muốn giữ: <strong>“Binh vô thường thế, thuỷ vô thường hình”</strong>. Số đo có thể mượn hình ảnh để đi nhờ hạ tầng sẵn có, miễn mình giữ chặt quy ước và kiểm tra được từng byte sau chuyến đi.</p>
+<p>Chênh tới một phần ba, chỉ vì ô thiếu bị coi như có giá trị trung bình. Thể tích vì vậy được server tính trên lưới gốc, bằng số thực đầy đủ. PNG chỉ dùng để hiển thị.</p>
+
+<h2>Tóm lại</h2>
+
+<ul>
+  <li><strong>Texture là một bảng số, không chỉ là ảnh.</strong> Với một quy ước giải mã rõ ràng, PNG chở số đo rất gọn và trình duyệt giải mã sẵn.</li>
+  <li><strong>Hai byte cho một số.</strong> Đổi ra milimét, dùng bù hai cho số âm, tách thành R và G.</li>
+  <li><strong>Tắt mọi bước “làm đẹp ảnh”:</strong> chỉnh màu, lật, làm mượt. Mỗi bước đều có thể sửa byte.</li>
+  <li><strong>Kiểm thử bằng mẫu có đáp án:</strong> giá trị âm, giá trị sát biên, bốn góc khác nhau, ô thiếu dữ liệu. Kiểm tra cả trên JavaScript lẫn trên GPU.</li>
+  <li><strong>Ảnh để nhìn, số liệu tính trên dữ liệu gốc.</strong></li>
+</ul>
+
         </div>
         <footer class="post__foot">
           <nav class="pager" data-post-nav aria-label="More posts"></nav>

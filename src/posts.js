@@ -17,7 +17,7 @@ export const POSTS = [
     title: 'Nhét số đo vào ảnh PNG: đưa bản đồ chênh cao lên GPU',
     titleJa: '数値をPNGに詰める',
     date: '2026-10-24',
-    minutes: 15,
+    minutes: 10,
     tags: ['webgl', 'shaders', 'png'],
     summary: 'Mã hoá độ chênh cao int16 vào hai kênh màu của ảnh PNG, và ba cái bẫy khi trình duyệt đọc lại.',
   },
